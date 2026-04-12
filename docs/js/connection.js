@@ -1,6 +1,7 @@
 const SUBPROTOCOL = 'json.webpubsub.azure.v1';
 const GROUP_NAME = 'remote';
 const MAX_BACKOFF = 30000;
+const HEARTBEAT_INTERVAL = 10000;
 
 export class ConnectionManager {
     #ws = null;
@@ -9,9 +10,11 @@ export class ConnectionManager {
     #onMessage;
     #reconnectAttempts = 0;
     #reconnectTimer = null;
+    #heartbeatTimer = null;
     #status = 'disconnected';
     #intentionalClose = false;
     #ackId = 0;
+    #lastReceiverHeartbeat = null;
 
     constructor(onStatusChange, onMessage) {
         this.#onStatusChange = onStatusChange;
@@ -26,6 +29,17 @@ export class ConnectionManager {
         return this.#status;
     }
 
+    /** Returns true if a receiver heartbeat was seen within the last 30 seconds. */
+    get receiverActive() {
+        if (!this.#lastReceiverHeartbeat) return false;
+        return (Date.now() - this.#lastReceiverHeartbeat) < 30000;
+    }
+
+    /** Returns the timestamp of the last receiver heartbeat, or null. */
+    get lastReceiverSeen() {
+        return this.#lastReceiverHeartbeat;
+    }
+
     connect(url) {
         if (!url) return;
         this.#url = url;
@@ -37,10 +51,12 @@ export class ConnectionManager {
     disconnect() {
         this.#intentionalClose = true;
         this.#clearReconnect();
+        this.#stopHeartbeat();
         if (this.#ws) {
             this.#ws.close();
             this.#ws = null;
         }
+        this.#lastReceiverHeartbeat = null;
         this.#setStatus('disconnected');
     }
 
@@ -113,6 +129,7 @@ export class ConnectionManager {
                 if (msg.event === 'connected') {
                     this.#joinGroup();
                     this.#setStatus('connected');
+                    this.#startHeartbeat();
                 }
                 break;
 
@@ -123,8 +140,14 @@ export class ConnectionManager {
                 break;
 
             case 'message':
-                if (this.#onMessage && msg.data) {
-                    this.#onMessage(msg.data);
+                if (msg.data) {
+                    // Track receiver heartbeats
+                    if (msg.data.type === 'heartbeat' && msg.data.source === 'receiver') {
+                        this.#lastReceiverHeartbeat = Date.now();
+                    }
+                    if (this.#onMessage) {
+                        this.#onMessage(msg.data);
+                    }
                 }
                 break;
         }
@@ -151,6 +174,32 @@ export class ConnectionManager {
         const delay = Math.min(1000 * Math.pow(2, this.#reconnectAttempts), MAX_BACKOFF);
         this.#reconnectAttempts++;
         this.#reconnectTimer = setTimeout(() => this.#openSocket(), delay);
+    }
+
+    #startHeartbeat() {
+        this.#stopHeartbeat();
+        this.#sendHeartbeat();
+        this.#heartbeatTimer = setInterval(() => this.#sendHeartbeat(), HEARTBEAT_INTERVAL);
+    }
+
+    #stopHeartbeat() {
+        if (this.#heartbeatTimer) {
+            clearInterval(this.#heartbeatTimer);
+            this.#heartbeatTimer = null;
+        }
+    }
+
+    #sendHeartbeat() {
+        if (!this.isConnected) return;
+        try {
+            this.#ws.send(JSON.stringify({
+                type: 'sendToGroup',
+                group: GROUP_NAME,
+                dataType: 'json',
+                data: { type: 'heartbeat', source: 'remote', timestamp: new Date().toISOString() },
+                ackId: ++this.#ackId,
+            }));
+        } catch { /* best-effort */ }
     }
 
     #clearReconnect() {

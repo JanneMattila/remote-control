@@ -14,12 +14,20 @@ public partial class MainForm : Form
     private int _messageCount;
     private bool _firstRun = true;
     private bool _isExiting;
+    private DateTime? _lastReceivedTime;
+    private DateTime? _lastRemoteHeartbeat;
+    private System.Windows.Forms.Timer _presenceTimer = null!;
 
     public MainForm()
     {
         InitializeComponent();
         LoadConfiguration();
         WireEvents();
+
+        // Timer to refresh presence/last-received display every second
+        _presenceTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+        _presenceTimer.Tick += (_, _) => UpdatePresenceDisplay();
+        _presenceTimer.Start();
     }
 
     // ───────── Configuration ─────────
@@ -82,6 +90,7 @@ public partial class MainForm : Form
         // Service events
         _pubSubService.StatusChanged += OnStatusChanged;
         _pubSubService.CommandReceived += OnCommandReceived;
+        _pubSubService.MessageReceived += OnMessageReceived;
     }
 
     // ───────── Form Lifecycle ─────────
@@ -254,7 +263,61 @@ public partial class MainForm : Form
                 btnConnect.Text = "Connect";
                 trayMenuConnect.Text = "Connect";
                 notifyIcon.Text = "Remote Control Receiver - Disconnected";
+                _lastRemoteHeartbeat = null;
                 break;
+        }
+    }
+
+    private void OnMessageReceived(string messageType, DateTime receivedAt)
+    {
+        if (InvokeRequired)
+        {
+            Invoke(() => OnMessageReceived(messageType, receivedAt));
+            return;
+        }
+
+        _lastReceivedTime = receivedAt;
+
+        if (string.Equals(messageType, "heartbeat", StringComparison.OrdinalIgnoreCase))
+        {
+            _lastRemoteHeartbeat = receivedAt;
+        }
+    }
+
+    private void UpdatePresenceDisplay()
+    {
+        // Last received
+        if (_lastReceivedTime.HasValue)
+        {
+            var ago = DateTime.Now - _lastReceivedTime.Value;
+            lastReceivedLabel.Text = ago.TotalSeconds < 5
+                ? $"Last: just now"
+                : $"Last: {_lastReceivedTime.Value:HH:mm:ss}";
+        }
+        else
+        {
+            lastReceivedLabel.Text = "Last: —";
+        }
+
+        // Remote (SPA) presence — active if heartbeat within last 30s
+        if (_lastRemoteHeartbeat.HasValue)
+        {
+            var ago = DateTime.Now - _lastRemoteHeartbeat.Value;
+            if (ago.TotalSeconds <= 30)
+            {
+                remoteStatusLabel.Text = "Remote: ✔ active";
+                remoteStatusLabel.ForeColor = Color.Green;
+            }
+            else
+            {
+                remoteStatusLabel.Text = $"Remote: last seen {_lastRemoteHeartbeat.Value:HH:mm:ss}";
+                remoteStatusLabel.ForeColor = Color.Orange;
+            }
+        }
+        else
+        {
+            remoteStatusLabel.Text = "Remote: —";
+            remoteStatusLabel.ForeColor = SystemColors.ControlText;
         }
     }
 
@@ -271,12 +334,18 @@ public partial class MainForm : Form
         var keyName = ResolveKeyName(message.Action);
         var vk = KeyboardService.GetVirtualKeyCode(keyName);
 
-        if (vk != 0)
+        // Only send key presses when the form is hidden (minimized to tray).
+        // When visible, act as debug mode — show commands but don't interfere.
+        bool formIsVisible = Visible && WindowState != FormWindowState.Minimized;
+        bool keySent = false;
+
+        if (vk != 0 && !formIsVisible)
         {
             KeyboardService.SendKey(vk);
+            keySent = true;
         }
 
-        AddLogEntry(message, keyName, vk);
+        AddLogEntry(message, keyName, vk, keySent, formIsVisible);
         _messageCount++;
         messageCountLabel.Text = $"Messages: {_messageCount}";
     }
@@ -289,13 +358,34 @@ public partial class MainForm : Form
         return "";
     }
 
-    private void AddLogEntry(CommandMessage message, string keyName, byte vk)
+    private void AddLogEntry(CommandMessage message, string keyName, byte vk, bool keySent, bool debugMode)
     {
         var time = DateTime.Now.ToString("HH:mm:ss");
-        var keySent = vk != 0 ? keyName : "(unknown)";
-        var item = new ListViewItem(new[] { time, message.Mode, message.Action, keySent });
+        string status;
+
+        if (vk == 0)
+            status = "(unknown key)";
+        else if (debugMode)
+            status = $"{keyName} — DEBUG (not sent)";
+        else if (keySent)
+            status = keyName;
+        else
+            status = $"{keyName} — FAILED";
+
+        var item = new ListViewItem(new[] { time, message.Mode, message.Action, status });
+
+        if (debugMode)
+        {
+            item.BackColor = Color.DarkSlateBlue;
+            item.ForeColor = Color.White;
+        }
+        else if (vk == 0)
+        {
+            item.ForeColor = Color.Gray;
+        }
 
         lvLog.Items.Insert(0, item);
+        lvLog.EnsureVisible(0);
 
         // Keep at most 100 entries
         while (lvLog.Items.Count > 100)

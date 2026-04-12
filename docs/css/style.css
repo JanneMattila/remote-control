@@ -149,6 +149,21 @@ body {
     50%      { opacity: 0.5; }
 }
 
+.receiver-status {
+    font-size: 14px;
+    opacity: 0.3;
+    transition: opacity var(--transition);
+    cursor: default;
+}
+
+.receiver-status.active {
+    opacity: 1;
+}
+
+.receiver-status.stale {
+    opacity: 0.5;
+}
+
 /* ---- Main Content ---- */
 .main-content {
     padding-top: 52px;

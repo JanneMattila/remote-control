@@ -39,6 +39,8 @@ partial class MainForm
     // Status strip
     private StatusStrip statusStrip;
     private ToolStripStatusLabel statusLabel;
+    private ToolStripStatusLabel lastReceivedLabel;
+    private ToolStripStatusLabel remoteStatusLabel;
     private ToolStripStatusLabel messageCountLabel;
 
     protected override void Dispose(bool disposing)
@@ -135,7 +137,7 @@ partial class MainForm
         colMode.Width = 90;
         colAction.Text = "Action";
         colAction.Width = 120;
-        colKey.Text = "Key Sent";
+        colKey.Text = "Status";
         colKey.Width = 140;
 
         lvLog.View = View.Details;
@@ -211,18 +213,26 @@ partial class MainForm
         // === StatusStrip ===
         statusStrip = new StatusStrip();
         statusLabel = new ToolStripStatusLabel();
+        lastReceivedLabel = new ToolStripStatusLabel();
+        remoteStatusLabel = new ToolStripStatusLabel();
         messageCountLabel = new ToolStripStatusLabel();
 
         statusStrip.SuspendLayout();
 
         statusLabel.Text = "Disconnected";
-        statusLabel.Spring = true;
         statusLabel.TextAlign = ContentAlignment.MiddleLeft;
+
+        lastReceivedLabel.Text = "Last: —";
+        lastReceivedLabel.TextAlign = ContentAlignment.MiddleLeft;
+
+        remoteStatusLabel.Text = "Remote: —";
+        remoteStatusLabel.Spring = true;
+        remoteStatusLabel.TextAlign = ContentAlignment.MiddleLeft;
 
         messageCountLabel.Text = "Messages: 0";
         messageCountLabel.TextAlign = ContentAlignment.MiddleRight;
 
-        statusStrip.Items.AddRange(new ToolStripItem[] { statusLabel, messageCountLabel });
+        statusStrip.Items.AddRange(new ToolStripItem[] { statusLabel, lastReceivedLabel, remoteStatusLabel, messageCountLabel });
 
         statusStrip.ResumeLayout(false);
         statusStrip.PerformLayout();

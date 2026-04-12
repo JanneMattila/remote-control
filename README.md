@@ -6,10 +6,10 @@ A two-app system for remotely controlling presentations, media players, and cust
 
 ```
 ┌─────────────────────┐       Azure Web PubSub        ┌──────────────────────┐
-│  SPA Remote Control  │ ──── (WebSocket / JSON) ────> │  WinForms Receiver   │
-│  (Mobile Browser)    │       Group: "remote"         │  (Desktop, sys tray) │
-│  Sends commands      │                               │  Simulates key press │
-└─────────────────────┘                                └──────────────────────┘
+│  SPA Remote Control │ ──── (WebSocket / JSON) ────> │  WinForms Receiver   │
+│  (Mobile Browser)   │       Group: "remote"         │  (Desktop, sys tray) │
+│  Sends commands     │                               │  Simulates key press │
+└─────────────────────┘                               └──────────────────────┘
 ```
 
 | Component | Technology | Location |
@@ -66,19 +66,6 @@ npx serve docs
 Then open the URL shown in the terminal (typically [http://localhost:3000](http://localhost:3000)).
 
 > **Note:** The PWA service worker requires either `localhost` or HTTPS. `localhost` works for local development without certificates.
-
-Other alternatives:
-
-```bash
-# Python built-in
-python -m http.server 8080 -d docs
-
-# Node.js http-server
-npx http-server docs -p 8080
-
-# PHP
-php -S localhost:8080 -t docs
-```
 
 ### 3. Deploy the SPA (GitHub Pages)
 

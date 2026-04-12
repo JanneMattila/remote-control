@@ -12,7 +12,10 @@ public class WebPubSubService : IDisposable
 {
     private WebPubSubClient? _client;
     private CancellationTokenSource? _cts;
+    private System.Threading.Timer? _heartbeatTimer;
     private bool _disposed;
+
+    private const int HeartbeatIntervalMs = 10_000;
 
     /// <summary>
     /// Raised when the connection status changes (e.g., "Connecting", "Connected", "Disconnected").
@@ -23,6 +26,11 @@ public class WebPubSubService : IDisposable
     /// Raised when a valid command message is received from the "remote" group.
     /// </summary>
     public event Action<CommandMessage>? CommandReceived;
+
+    /// <summary>
+    /// Raised when any group message is received (command or heartbeat).
+    /// </summary>
+    public event Action<string, DateTime>? MessageReceived;
 
     /// <summary>
     /// Gets a value indicating whether the client is currently connected.
@@ -50,12 +58,14 @@ public class WebPubSubService : IDisposable
         {
             IsConnected = true;
             StatusChanged?.Invoke("Connected");
+            StartHeartbeat();
             return Task.CompletedTask;
         };
 
         _client.Disconnected += (args) =>
         {
             IsConnected = false;
+            StopHeartbeat();
             StatusChanged?.Invoke("Disconnected");
             return Task.CompletedTask;
         };
@@ -63,6 +73,7 @@ public class WebPubSubService : IDisposable
         _client.Stopped += (args) =>
         {
             IsConnected = false;
+            StopHeartbeat();
             StatusChanged?.Invoke("Disconnected");
             return Task.CompletedTask;
         };
@@ -73,8 +84,12 @@ public class WebPubSubService : IDisposable
             {
                 var json = args.Message.Data.ToString();
                 var message = JsonSerializer.Deserialize<CommandMessage>(json);
-                if (message is not null &&
-                    string.Equals(message.Type, "command", StringComparison.OrdinalIgnoreCase))
+                if (message is null) return Task.CompletedTask;
+
+                // Notify about any received message
+                MessageReceived?.Invoke(message.Type, DateTime.Now);
+
+                if (string.Equals(message.Type, "command", StringComparison.OrdinalIgnoreCase))
                 {
                     CommandReceived?.Invoke(message);
                 }
@@ -90,11 +105,44 @@ public class WebPubSubService : IDisposable
         await _client.JoinGroupAsync("remote");
     }
 
+    private void StartHeartbeat()
+    {
+        StopHeartbeat();
+        _heartbeatTimer = new System.Threading.Timer(
+            _ => SendHeartbeatAsync().ConfigureAwait(false),
+            null,
+            0,
+            HeartbeatIntervalMs);
+    }
+
+    private void StopHeartbeat()
+    {
+        _heartbeatTimer?.Dispose();
+        _heartbeatTimer = null;
+    }
+
+    private async Task SendHeartbeatAsync()
+    {
+        if (_client is null || !IsConnected) return;
+        try
+        {
+            var payload = BinaryData.FromString(
+                JsonSerializer.Serialize(new { type = "heartbeat", source = "receiver", timestamp = DateTime.UtcNow }));
+            await _client.SendToGroupAsync("remote", payload, WebPubSubDataType.Json);
+        }
+        catch
+        {
+            // Best-effort heartbeat
+        }
+    }
+
     /// <summary>
     /// Disconnects from the Azure Web PubSub service.
     /// </summary>
     public async Task DisconnectAsync()
     {
+        StopHeartbeat();
+
         if (_client is not null)
         {
             try
@@ -124,6 +172,8 @@ public class WebPubSubService : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+
+        StopHeartbeat();
 
         try
         {

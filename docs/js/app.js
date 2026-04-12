@@ -23,6 +23,7 @@ const dom = {
     timerPlayPause: $('#timer-play-pause'),
     timerReset: $('#timer-reset'),
     statusDot: $('#status-dot'),
+    receiverStatus: $('#receiver-status'),
     gearBtn: $('#gear-btn'),
     // Mode tabs
     modeTabs: $('#mode-tabs'),
@@ -460,4 +461,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').catch(() => {});
     }
+
+    // Update receiver presence indicator every 2 seconds
+    setInterval(updateReceiverStatus, 2000);
 });
+
+function updateReceiverStatus() {
+    const el = dom.receiverStatus;
+    if (connection.receiverActive) {
+        el.classList.add('active');
+        el.classList.remove('stale');
+        el.title = 'Receiver: active';
+    } else if (connection.lastReceiverSeen) {
+        el.classList.remove('active');
+        el.classList.add('stale');
+        const t = new Date(connection.lastReceiverSeen).toLocaleTimeString();
+        el.title = `Receiver: last seen ${t}`;
+    } else {
+        el.classList.remove('active', 'stale');
+        el.title = 'Receiver: not detected';
+    }
+}
