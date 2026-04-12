@@ -12,10 +12,7 @@ public class WebPubSubService : IDisposable
 {
     private WebPubSubClient? _client;
     private CancellationTokenSource? _cts;
-    private System.Threading.Timer? _heartbeatTimer;
     private bool _disposed;
-
-    private const int HeartbeatIntervalMs = 10_000;
 
     /// <summary>
     /// Raised when the connection status changes (e.g., "Connecting", "Connected", "Disconnected").
@@ -58,14 +55,12 @@ public class WebPubSubService : IDisposable
         {
             IsConnected = true;
             StatusChanged?.Invoke("Connected");
-            StartHeartbeat();
             return Task.CompletedTask;
         };
 
         _client.Disconnected += (args) =>
         {
             IsConnected = false;
-            StopHeartbeat();
             StatusChanged?.Invoke("Disconnected");
             return Task.CompletedTask;
         };
@@ -73,7 +68,6 @@ public class WebPubSubService : IDisposable
         _client.Stopped += (args) =>
         {
             IsConnected = false;
-            StopHeartbeat();
             StatusChanged?.Invoke("Disconnected");
             return Task.CompletedTask;
         };
@@ -89,7 +83,11 @@ public class WebPubSubService : IDisposable
                 // Notify about any received message
                 MessageReceived?.Invoke(message.Type, DateTime.Now);
 
-                if (string.Equals(message.Type, "command", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(message.Type, "heartbeat", StringComparison.OrdinalIgnoreCase))
+                {
+                    _ = SendHeartbeatResponseAsync();
+                }
+                else if (string.Equals(message.Type, "command", StringComparison.OrdinalIgnoreCase))
                 {
                     CommandReceived?.Invoke(message);
                 }
@@ -105,23 +103,7 @@ public class WebPubSubService : IDisposable
         await _client.JoinGroupAsync("remote");
     }
 
-    private void StartHeartbeat()
-    {
-        StopHeartbeat();
-        _heartbeatTimer = new System.Threading.Timer(
-            _ => SendHeartbeatAsync().ConfigureAwait(false),
-            null,
-            0,
-            HeartbeatIntervalMs);
-    }
-
-    private void StopHeartbeat()
-    {
-        _heartbeatTimer?.Dispose();
-        _heartbeatTimer = null;
-    }
-
-    private async Task SendHeartbeatAsync()
+    private async Task SendHeartbeatResponseAsync()
     {
         if (_client is null || !IsConnected) return;
         try
@@ -141,8 +123,6 @@ public class WebPubSubService : IDisposable
     /// </summary>
     public async Task DisconnectAsync()
     {
-        StopHeartbeat();
-
         if (_client is not null)
         {
             try
@@ -173,12 +153,9 @@ public class WebPubSubService : IDisposable
         if (_disposed) return;
         _disposed = true;
 
-        StopHeartbeat();
-
         try
         {
             _cts?.Cancel();
-            _client?.StopAsync().GetAwaiter().GetResult();
         }
         catch
         {

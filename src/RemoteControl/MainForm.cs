@@ -146,9 +146,9 @@ public partial class MainForm : Form
             await ConnectAsync();
     }
 
-    private void TrayMenuExit_Click(object? sender, EventArgs e)
+    private async void TrayMenuExit_Click(object? sender, EventArgs e)
     {
-        ExitApplication();
+        await ExitApplicationAsync();
     }
 
     private void ShowMainWindow()
@@ -160,10 +160,11 @@ public partial class MainForm : Form
         Activate();
     }
 
-    private void ExitApplication()
+    private async Task ExitApplicationAsync()
     {
         _isExiting = true;
         notifyIcon.Visible = false;
+        await _pubSubService.DisconnectAsync();
         Application.Exit();
     }
 
