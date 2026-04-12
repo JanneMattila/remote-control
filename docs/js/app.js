@@ -37,6 +37,7 @@ const dom = {
     settingsExport: $('#settings-export'),
     settingsImportFile: $('#settings-import-file'),
     settingsClear: $('#settings-clear'),
+    settingsRefresh: $('#settings-refresh'),
     settingsDisconnect: $('#settings-disconnect'),
     // Timer settings within overlay
     timerModeStopwatch: $('#timer-mode-stopwatch'),
@@ -390,16 +391,34 @@ function bindEvents() {
     });
 
     dom.settingsClear.addEventListener('click', () => {
-        if (confirm('Clear all settings and data?')) {
-            connection.disconnect();
-            timer.reset();
-            clearAll();
-            currentMode = 'powerpoint';
-            renderModeTabs();
-            renderCommands();
-            updateTimerDisplay();
-            showSetup();
-            closeSettings();
+        timer.reset();
+        clearAll();
+        currentMode = 'powerpoint';
+        renderModeTabs();
+        renderCommands();
+        updateTimerDisplay();
+        closeSettings();
+    });
+
+    dom.settingsRefresh.addEventListener('click', async () => {
+        dom.settingsRefresh.textContent = '⏳ Checking...';
+        dom.settingsRefresh.disabled = true;
+        try {
+            const reg = await navigator.serviceWorker?.getRegistration();
+            if (reg) {
+                await reg.update();
+                if (reg.waiting) {
+                    reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    location.reload();
+                    return;
+                }
+            }
+            // Also clear caches to force fresh fetch
+            const keys = await caches.keys();
+            await Promise.all(keys.map(k => caches.delete(k)));
+            location.reload();
+        } catch {
+            location.reload();
         }
     });
 

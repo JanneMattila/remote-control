@@ -56,7 +56,11 @@ export function downloadConfigFile() {
 }
 
 export function clearAll() {
+    const connectionUrl = localStorage.getItem(StorageKeys.CONNECTION_URL);
     for (const key of Object.values(StorageKeys)) {
         localStorage.removeItem(key);
+    }
+    if (connectionUrl) {
+        localStorage.setItem(StorageKeys.CONNECTION_URL, connectionUrl);
     }
 }
