@@ -14,7 +14,7 @@ A two-app system for remotely controlling presentations, media players, and cust
 
 | Component | Technology | Location |
 |-----------|-----------|----------|
-| **Remote Control** (sender) | Vanilla HTML/CSS/JS PWA | `/pages/` — hosted on GitHub Pages |
+| **Remote Control** (sender) | Vanilla HTML/CSS/JS PWA | `/docs/` — hosted on GitHub Pages |
 | **Receiver** (desktop) | .NET 10 Windows Forms | `/src/RemoteControl/` |
 
 ## Features
@@ -57,10 +57,10 @@ A two-app system for remotely controlling presentations, media players, and cust
 
 ### 2. Test the SPA Locally
 
-Serve the `/pages` folder with any static file server:
+Serve the `/docs` folder with any static file server:
 
 ```bash
-npx serve pages
+npx serve docs
 ```
 
 Then open the URL shown in the terminal (typically [http://localhost:3000](http://localhost:3000)).
@@ -71,18 +71,18 @@ Other alternatives:
 
 ```bash
 # Python built-in
-python -m http.server 8080 -d pages
+python -m http.server 8080 -d docs
 
 # Node.js http-server
-npx http-server pages -p 8080
+npx http-server docs -p 8080
 
 # PHP
-php -S localhost:8080 -t pages
+php -S localhost:8080 -t docs
 ```
 
 ### 3. Deploy the SPA (GitHub Pages)
 
-1. In your GitHub repo settings, enable **GitHub Pages** with source set to the `main` branch and folder `/pages`.
+1. In your GitHub repo settings, enable **GitHub Pages** with source set to the `main` branch and folder `/docs`.
 2. The SPA will be available at `https://<username>.github.io/remote-control/`.
 3. Open it on your phone and paste the Client Access URL when prompted.
 
