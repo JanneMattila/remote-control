@@ -5,11 +5,13 @@ export const MODES = {
         name: 'PowerPoint',
         icon: '📊',
         commands: [
-            { action: 'nextSlide', label: 'Next Slide', icon: '▶', class: 'btn-primary btn-large' },
-            { action: 'prevSlide', label: 'Previous Slide', icon: '◀', class: 'btn-secondary btn-large' },
+            { action: 'nextSlide', label: 'Next Slide', icon: '▶', class: 'btn-primary btn-hero' },
+        ],
+        critical: [
             { action: 'startSlideshow', label: 'Start Slideshow', icon: '🎬', class: 'btn-accent' },
             { action: 'endSlideshow', label: 'End Slideshow', icon: '⏹', class: 'btn-accent' },
             { action: 'blackScreen', label: 'Black Screen', icon: '⬛', class: 'btn-dark' },
+            { action: 'prevSlide', label: '◀ Previous Slide', icon: '', class: 'btn-secondary', noConfirm: true },
         ]
     },
     watch: {
@@ -17,12 +19,14 @@ export const MODES = {
         icon: '🎬',
         commands: [
             { action: 'playPause', label: 'Play / Pause', icon: '⏯', class: 'btn-primary btn-large' },
-            { action: 'volumeUp', label: 'Volume Up', icon: '🔊', class: 'btn-secondary' },
-            { action: 'volumeDown', label: 'Volume Down', icon: '🔉', class: 'btn-secondary' },
+            { action: 'skipBack', label: 'Skip Back', icon: '⏪', class: 'btn-secondary btn-large' },
+            { action: 'skipForward', label: 'Skip Forward', icon: '⏩', class: 'btn-secondary btn-large' },
+        ],
+        critical: [
+            { action: 'volumeUp', label: 'Vol +', icon: '🔊', class: 'btn-secondary' },
+            { action: 'volumeDown', label: 'Vol −', icon: '🔉', class: 'btn-secondary' },
             { action: 'mute', label: 'Mute', icon: '🔇', class: 'btn-secondary' },
             { action: 'fullscreen', label: 'Fullscreen', icon: '⛶', class: 'btn-accent' },
-            { action: 'skipForward', label: 'Skip Forward', icon: '⏩', class: 'btn-secondary' },
-            { action: 'skipBack', label: 'Skip Back', icon: '⏪', class: 'btn-secondary' },
         ]
     }
 };

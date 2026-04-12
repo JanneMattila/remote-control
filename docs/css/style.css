@@ -6,8 +6,8 @@
     --bg-primary: #1a1a2e;
     --bg-secondary: #16213e;
     --bg-card: #0f3460;
-    --accent: #e94560;
-    --accent-dark: #c2185b;
+    --accent: #5dade2;
+    --accent-dark: #2e86c1;
     --text-primary: #f0f0f0;
     --text-secondary: #a0a0b8;
     --success: #4caf50;
@@ -167,8 +167,17 @@ body {
 /* ---- Main Content ---- */
 .main-content {
     padding-top: 52px;
-    padding-bottom: 20px;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.commands-layout {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding-bottom: env(safe-area-inset-bottom, 12px);
 }
 
 /* ---- Mode Tabs ---- */
@@ -211,8 +220,21 @@ body {
 
 /* ---- Command Buttons ---- */
 .commands-area {
-    padding: 12px;
+    padding: 8px 12px;
     display: grid;
+    gap: 8px;
+}
+
+.commands-top {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+}
+
+.commands-top.hidden {
+    display: none;
+}
+
+.commands-bottom {
+    padding: 12px;
     gap: 10px;
 }
 
@@ -221,20 +243,31 @@ body {
     align-items: center;
     justify-content: center;
     gap: 10px;
-    padding: 16px;
-    min-height: 60px;
+    padding: 14px;
+    min-height: 52px;
     border: none;
     border-radius: var(--radius);
-    font-size: 1.05rem;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: transform 0.1s ease, filter 0.1s ease;
+    transition: transform 0.1s ease, filter 0.1s ease, background 0.2s ease;
     color: var(--text-primary);
 }
 
 .cmd-btn:active {
     transform: scale(0.95);
     filter: brightness(0.85);
+}
+
+.cmd-btn.confirming {
+    background: var(--warning) !important;
+    color: #111;
+    animation: pulse-confirm 0.6s infinite alternate;
+}
+
+@keyframes pulse-confirm {
+    from { opacity: 1; }
+    to   { opacity: 0.75; }
 }
 
 .cmd-btn .icon {
@@ -260,28 +293,47 @@ body {
 }
 
 .btn-large {
-    min-height: 72px;
-    font-size: 1.15rem;
+    min-height: 80px;
+    font-size: 1.2rem;
 }
 
-/* Grid layouts per mode */
-.commands-area[data-mode="powerpoint"] {
+.btn-hero {
+    min-height: 40vh;
+    flex: 1;
+    font-size: 1.4rem;
+    border-radius: var(--radius);
+}
+
+/* Grid layouts for bottom (primary) area */
+.commands-bottom[data-mode="powerpoint"] {
+    display: flex;
+    flex-direction: column;
+}
+
+.commands-bottom[data-mode="powerpoint"] .cmd-btn {
+    flex: 1;
+}
+
+/* Top area: Previous Slide full-width */
+/* PowerPoint top: 3-col for critical, Previous Slide full-width at bottom */
+.commands-top[data-mode="powerpoint"] {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.commands-top[data-mode="powerpoint"] .cmd-btn:last-child {
+    grid-column: 1 / -1;
+    margin-top: 16px;
+}
+
+.commands-bottom[data-mode="watch"] {
     grid-template-columns: 1fr 1fr;
 }
 
-.commands-area[data-mode="powerpoint"] .cmd-btn:first-child {
+.commands-bottom[data-mode="watch"] .cmd-btn:first-child {
     grid-column: 1 / -1;
 }
 
-.commands-area[data-mode="watch"] {
-    grid-template-columns: 1fr 1fr;
-}
-
-.commands-area[data-mode="watch"] .cmd-btn:first-child {
-    grid-column: 1 / -1;
-}
-
-.commands-area[data-mode="custom"] {
+.commands-bottom[data-mode="custom"] {
     grid-template-columns: 1fr 1fr;
 }
 

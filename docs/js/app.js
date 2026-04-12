@@ -27,7 +27,8 @@ const dom = {
     gearBtn: $('#gear-btn'),
     // Mode tabs
     modeTabs: $('#mode-tabs'),
-    commandsArea: $('#commands-area'),
+    commandsTop: $('#commands-top'),
+    commandsBottom: $('#commands-bottom'),
     // Settings overlay
     settingsOverlay: $('#settings-overlay'),
     settingsClose: $('#settings-close'),
@@ -155,46 +156,90 @@ function switchMode(mode) {
 }
 
 function renderCommands() {
-    const area = dom.commandsArea;
-    area.innerHTML = '';
-    area.dataset.mode = currentMode;
+    const topArea = dom.commandsTop;
+    const bottomArea = dom.commandsBottom;
+    topArea.innerHTML = '';
+    bottomArea.innerHTML = '';
+    topArea.dataset.mode = currentMode;
+    bottomArea.dataset.mode = currentMode;
 
-    let commands;
     if (currentMode === 'custom') {
-        commands = getCustomCommands();
-    } else {
-        commands = MODES[currentMode]?.commands || [];
-    }
-
-    for (let i = 0; i < commands.length; i++) {
-        const cmd = commands[i];
-        const btn = document.createElement('button');
-        btn.className = `cmd-btn ${cmd.class || 'btn-secondary'}`;
-        btn.innerHTML = `<span class="icon">${cmd.icon || ''}</span> ${cmd.label}`;
-        btn.addEventListener('click', () => {
-            if (navigator.vibrate) navigator.vibrate(50);
-            connection.sendCommand(currentMode, cmd.action);
-        });
-        // Long-press to edit custom commands
-        if (currentMode === 'custom') {
-            let pressTimer = null;
-            btn.addEventListener('pointerdown', () => {
-                pressTimer = setTimeout(() => openCustomDialog(i), 500);
-            });
-            btn.addEventListener('pointerup', () => clearTimeout(pressTimer));
-            btn.addEventListener('pointerleave', () => clearTimeout(pressTimer));
+        // Custom mode: all buttons in bottom area, no critical split
+        topArea.classList.add('hidden');
+        const commands = getCustomCommands();
+        for (let i = 0; i < commands.length; i++) {
+            bottomArea.appendChild(createCommandBtn(commands[i], false, i));
         }
-        area.appendChild(btn);
-    }
-
-    // Custom mode: add button
-    if (currentMode === 'custom') {
         const addBtn = document.createElement('button');
         addBtn.className = 'add-custom-btn';
         addBtn.textContent = '+ Add Command';
         addBtn.addEventListener('click', () => openCustomDialog(-1));
-        area.appendChild(addBtn);
+        bottomArea.appendChild(addBtn);
+    } else {
+        topArea.classList.remove('hidden');
+        const mode = MODES[currentMode];
+        const critical = mode?.critical || [];
+        const primary = mode?.commands || [];
+
+        // Critical buttons go to the top area (require confirmation unless noConfirm)
+        for (const cmd of critical) {
+            topArea.appendChild(createCommandBtn(cmd, !cmd.noConfirm));
+        }
+        // Primary buttons go to the bottom area (easy thumb reach)
+        for (const cmd of primary) {
+            bottomArea.appendChild(createCommandBtn(cmd, false));
+        }
     }
+}
+
+let confirmTimers = new Map();
+
+function createCommandBtn(cmd, requireConfirm, customIndex) {
+    const btn = document.createElement('button');
+    btn.className = `cmd-btn ${cmd.class || 'btn-secondary'}`;
+    btn.innerHTML = `<span class="icon">${cmd.icon || ''}</span> ${cmd.label}`;
+
+    if (requireConfirm) {
+        btn.addEventListener('click', () => {
+            if (btn.classList.contains('confirming')) {
+                // Second tap — send command
+                btn.classList.remove('confirming');
+                clearTimeout(confirmTimers.get(btn));
+                confirmTimers.delete(btn);
+                btn.innerHTML = `<span class="icon">${cmd.icon || ''}</span> ${cmd.label}`;
+                if (navigator.vibrate) navigator.vibrate(50);
+                connection.sendCommand(currentMode, cmd.action);
+            } else {
+                // First tap — enter confirm state
+                btn.classList.add('confirming');
+                btn.innerHTML = `⚠️ Tap again: ${cmd.label}`;
+                if (navigator.vibrate) navigator.vibrate([30, 30, 30]);
+                const timer = setTimeout(() => {
+                    btn.classList.remove('confirming');
+                    btn.innerHTML = `<span class="icon">${cmd.icon || ''}</span> ${cmd.label}`;
+                    confirmTimers.delete(btn);
+                }, 3000);
+                confirmTimers.set(btn, timer);
+            }
+        });
+    } else {
+        btn.addEventListener('click', () => {
+            if (navigator.vibrate) navigator.vibrate(50);
+            connection.sendCommand(currentMode, cmd.action);
+        });
+    }
+
+    // Long-press to edit custom commands
+    if (currentMode === 'custom' && customIndex !== undefined) {
+        let pressTimer = null;
+        btn.addEventListener('pointerdown', () => {
+            pressTimer = setTimeout(() => openCustomDialog(customIndex), 500);
+        });
+        btn.addEventListener('pointerup', () => clearTimeout(pressTimer));
+        btn.addEventListener('pointerleave', () => clearTimeout(pressTimer));
+    }
+
+    return btn;
 }
 
 /* ================================================
