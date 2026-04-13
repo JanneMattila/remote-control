@@ -63,6 +63,7 @@ public class KeyMappingConfig
                 ["nextSlide"] = "Right",
                 ["prevSlide"] = "Left",
                 ["startSlideshow"] = "F5",
+                ["startSlideshowFromCurrent"] = "Shift+F5",
                 ["endSlideshow"] = "Escape",
                 ["blackScreen"] = "B",
                 ["playPause"] = "Space",
@@ -71,7 +72,9 @@ public class KeyMappingConfig
                 ["mute"] = "M",
                 ["fullscreen"] = "F",
                 ["skipForward"] = "Right",
-                ["skipBack"] = "Left"
+                ["skipBack"] = "Left",
+                ["switchDesktop1"] = "Win+Ctrl+Left",
+                ["switchDesktop2"] = "Win+Ctrl+Right"
             },
             ConnectionString = "",
             HubName = "Hub"
@@ -128,6 +131,7 @@ public class KeyMappingConfig
             ["nextSlide"] = "Next Slide",
             ["prevSlide"] = "Previous Slide",
             ["startSlideshow"] = "Start Slideshow",
+            ["startSlideshowFromCurrent"] = "Start Slideshow (Current)",
             ["endSlideshow"] = "End Slideshow",
             ["blackScreen"] = "Black Screen",
             ["playPause"] = "Play / Pause",
@@ -136,7 +140,9 @@ public class KeyMappingConfig
             ["mute"] = "Mute",
             ["fullscreen"] = "Fullscreen",
             ["skipForward"] = "Skip Forward",
-            ["skipBack"] = "Skip Back"
+            ["skipBack"] = "Skip Back",
+            ["switchDesktop1"] = "Switch Desktop 1",
+            ["switchDesktop2"] = "Switch Desktop 2"
         };
     }
 }

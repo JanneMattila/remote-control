@@ -35,6 +35,38 @@ public static partial class KeyboardService
     }
 
     /// <summary>
+    /// Simulates a key combination (modifier + key), e.g. Shift+F5.
+    /// </summary>
+    public static void SendKeyCombination(byte modifier, byte virtualKeyCode)
+    {
+        keybd_event(modifier, 0, KEYEVENTF_KEYDOWN, 0);
+        Thread.Sleep(30);
+        keybd_event(virtualKeyCode, 0, KEYEVENTF_KEYDOWN, 0);
+        Thread.Sleep(50);
+        keybd_event(virtualKeyCode, 0, KEYEVENTF_KEYUP, 0);
+        Thread.Sleep(30);
+        keybd_event(modifier, 0, KEYEVENTF_KEYUP, 0);
+    }
+
+    /// <summary>
+    /// Simulates a key combination with two modifiers (mod1 + mod2 + key), e.g. Win+Ctrl+Left.
+    /// </summary>
+    public static void SendKeyCombination(byte modifier1, byte modifier2, byte virtualKeyCode)
+    {
+        keybd_event(modifier1, 0, KEYEVENTF_KEYDOWN, 0);
+        Thread.Sleep(20);
+        keybd_event(modifier2, 0, KEYEVENTF_KEYDOWN, 0);
+        Thread.Sleep(20);
+        keybd_event(virtualKeyCode, 0, KEYEVENTF_KEYDOWN, 0);
+        Thread.Sleep(50);
+        keybd_event(virtualKeyCode, 0, KEYEVENTF_KEYUP, 0);
+        Thread.Sleep(20);
+        keybd_event(modifier2, 0, KEYEVENTF_KEYUP, 0);
+        Thread.Sleep(20);
+        keybd_event(modifier1, 0, KEYEVENTF_KEYUP, 0);
+    }
+
+    /// <summary>
     /// Resolves a friendly key name to a Windows virtual key code.
     /// </summary>
     /// <param name="keyName">

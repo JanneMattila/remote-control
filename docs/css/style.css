@@ -6,8 +6,8 @@
     --bg-primary: #1a1a2e;
     --bg-secondary: #16213e;
     --bg-card: #0f3460;
-    --accent: #5dade2;
-    --accent-dark: #2e86c1;
+    --accent: #2a6f97;
+    --accent-dark: #1b4965;
     --text-primary: #f0f0f0;
     --text-secondary: #a0a0b8;
     --success: #4caf50;
@@ -167,16 +167,17 @@ body {
 /* ---- Main Content ---- */
 .main-content {
     padding-top: 52px;
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .commands-layout {
     flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     padding-bottom: env(safe-area-inset-bottom, 12px);
 }
 
@@ -278,7 +279,8 @@ body {
 }
 
 .btn-primary {
-    background: var(--accent);
+    background: var(--bg-card);
+    border: 1.5px solid var(--accent);
 }
 
 .btn-secondary {
@@ -301,14 +303,16 @@ body {
 }
 
 .btn-hero {
-    min-height: 40vh;
     flex: 1;
+    min-height: 0;
     font-size: 1.4rem;
     border-radius: var(--radius);
 }
 
 /* Grid layouts for bottom (primary) area */
 .commands-bottom[data-mode="powerpoint"] {
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
 }
@@ -318,9 +322,9 @@ body {
 }
 
 /* Top area: Previous Slide full-width */
-/* PowerPoint top: 3-col for critical, Previous Slide full-width at bottom */
+/* PowerPoint top: 2-col grid for critical, Previous Slide full-width at bottom */
 .commands-top[data-mode="powerpoint"] {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
 }
 
 .commands-top[data-mode="powerpoint"] .cmd-btn:last-child {
@@ -613,6 +617,80 @@ body {
     max-width: 380px;
 }
 
+/* ---- Confirm Dialog ---- */
+.confirm-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 250;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0s 0.2s, opacity 0.2s ease;
+}
+
+.confirm-dialog.open {
+    visibility: visible;
+    opacity: 1;
+    transition: visibility 0s, opacity 0.2s ease;
+}
+
+.confirm-dialog-panel {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    padding: 24px 18px;
+    width: 100%;
+    max-width: 340px;
+}
+
+.confirm-dialog-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.confirm-dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.confirm-dialog-body .confirm-option {
+    padding: 14px;
+    min-height: 52px;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-primary);
+    background: var(--accent);
+    transition: filter 0.1s ease;
+    text-align: center;
+}
+
+.confirm-dialog-body .confirm-option:active {
+    filter: brightness(0.85);
+}
+
+.confirm-dialog-body .confirm-option.danger {
+    background: var(--error);
+}
+
+.confirm-dialog-body .confirm-option.dark {
+    background: #111;
+    border: 1.5px solid #444;
+}
+
+.confirm-dialog-body .confirm-option.secondary {
+    background: var(--bg-card);
+}
+
 /* ---- Utility ---- */
 .hidden {
     display: none !important;
@@ -635,14 +713,6 @@ body {
 
 /* ---- Responsive: narrow mobile screens ---- */
 @media (max-width: 400px) {
-    .commands-top[data-mode="powerpoint"] {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .commands-top[data-mode="powerpoint"] .cmd-btn:last-child {
-        grid-column: 1 / -1;
-    }
-
     .commands-top .cmd-btn {
         padding: 10px 8px;
         font-size: 0.85rem;

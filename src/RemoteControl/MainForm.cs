@@ -338,20 +338,51 @@ public partial class MainForm : Form
         }
 
         var keyName = ResolveKeyName(message.Action);
-        var vk = KeyboardService.GetVirtualKeyCode(keyName);
 
         // Only send key presses when the form is hidden (minimized to tray).
         // When visible, act as debug mode — show commands but don't interfere.
         bool formIsVisible = Visible && WindowState != FormWindowState.Minimized;
         bool keySent = false;
 
-        if (vk != 0 && !formIsVisible)
+        if (!formIsVisible && !string.IsNullOrEmpty(keyName))
         {
-            KeyboardService.SendKey(vk);
-            keySent = true;
+            var parts = keyName.Split('+');
+            if (parts.Length == 3)
+            {
+                var mod1 = ResolveModifier(parts[0].Trim());
+                var mod2 = ResolveModifier(parts[1].Trim());
+                var vk = KeyboardService.GetVirtualKeyCode(parts[2].Trim());
+                if (mod1 != 0 && mod2 != 0 && vk != 0)
+                {
+                    KeyboardService.SendKeyCombination(mod1, mod2, vk);
+                    keySent = true;
+                }
+            }
+            else if (parts.Length == 2)
+            {
+                var mod = ResolveModifier(parts[0].Trim());
+                var vk = KeyboardService.GetVirtualKeyCode(parts[1].Trim());
+                if (mod != 0 && vk != 0)
+                {
+                    KeyboardService.SendKeyCombination(mod, vk);
+                    keySent = true;
+                }
+            }
+            else
+            {
+                var vk = KeyboardService.GetVirtualKeyCode(keyName);
+                if (vk != 0)
+                {
+                    KeyboardService.SendKey(vk);
+                    keySent = true;
+                }
+            }
         }
 
-        AddLogEntry(message, keyName, vk, keySent, formIsVisible);
+        var displayVk = keyName.Contains('+')
+            ? KeyboardService.GetVirtualKeyCode(keyName.Substring(keyName.LastIndexOf('+') + 1))
+            : KeyboardService.GetVirtualKeyCode(keyName);
+        AddLogEntry(message, keyName, displayVk, keySent, formIsVisible);
         _messageCount++;
         messageCountLabel.Text = $"Messages: {_messageCount}";
     }
@@ -362,6 +393,18 @@ public partial class MainForm : Form
             return keyName;
 
         return "";
+    }
+
+    private static byte ResolveModifier(string name)
+    {
+        return name.ToUpperInvariant() switch
+        {
+            "SHIFT" => (byte)Keys.ShiftKey,
+            "CTRL" or "CONTROL" => (byte)Keys.ControlKey,
+            "ALT" => (byte)Keys.Menu,
+            "WIN" or "LWIN" => (byte)Keys.LWin,
+            _ => 0
+        };
     }
 
     private void AddLogEntry(CommandMessage message, string keyName, byte vk, bool keySent, bool debugMode)

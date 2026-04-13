@@ -11,6 +11,7 @@ export const MODES = {
             { action: 'startSlideshow', label: 'Start Slideshow', icon: '🎬', class: 'btn-accent' },
             { action: 'endSlideshow', label: 'End Slideshow', icon: '⏹', class: 'btn-accent' },
             { action: 'blackScreen', label: 'Black Screen', icon: '⬛', class: 'btn-dark' },
+            { action: 'switchDesktop', label: 'Switch Desktop', icon: '🖥', class: 'btn-accent' },
             { action: 'prevSlide', label: '◀ Previous Slide', icon: '', class: 'btn-secondary', noConfirm: true },
         ]
     },

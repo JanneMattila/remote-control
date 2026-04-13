@@ -59,6 +59,11 @@ const dom = {
     customIcon: $('#custom-icon'),
     customSave: $('#custom-save'),
     customDelete: $('#custom-delete'),
+    // Confirm dialog
+    confirmDialog: $('#confirm-dialog'),
+    confirmDialogTitle: $('#confirm-dialog-title'),
+    confirmDialogBody: $('#confirm-dialog-body'),
+    confirmDialogCancel: $('#confirm-dialog-cancel'),
 };
 
 /* ================================================
@@ -199,33 +204,76 @@ function renderCommands() {
 
 let confirmTimers = new Map();
 
+/* ================================================
+   Confirm Dialog
+   ================================================ */
+function openConfirmDialog(title, options) {
+    dom.confirmDialogTitle.textContent = title;
+    dom.confirmDialogBody.innerHTML = '';
+    for (const opt of options) {
+        const btn = document.createElement('button');
+        btn.className = `confirm-option ${opt.class || ''}`;
+        btn.textContent = opt.label;
+        btn.addEventListener('click', () => {
+            closeConfirmDialog();
+            if (navigator.vibrate) navigator.vibrate(50);
+            opt.onSelect();
+        });
+        dom.confirmDialogBody.appendChild(btn);
+    }
+    dom.confirmDialog.classList.add('open');
+}
+
+function closeConfirmDialog() {
+    dom.confirmDialog.classList.remove('open');
+}
+
 function createCommandBtn(cmd, requireConfirm, customIndex) {
     const btn = document.createElement('button');
     btn.className = `cmd-btn ${cmd.class || 'btn-secondary'}`;
     btn.innerHTML = `<span class="icon">${cmd.icon || ''}</span> ${cmd.label}`;
 
-    if (requireConfirm) {
+    if (cmd.action === 'switchDesktop') {
+        // Special: show desktop choice dialog
         btn.addEventListener('click', () => {
-            if (btn.classList.contains('confirming')) {
-                // Second tap — send command
-                btn.classList.remove('confirming');
-                clearTimeout(confirmTimers.get(btn));
-                confirmTimers.delete(btn);
-                btn.innerHTML = `<span class="icon">${cmd.icon || ''}</span> ${cmd.label}`;
-                if (navigator.vibrate) navigator.vibrate(50);
-                connection.sendCommand(currentMode, cmd.action);
-            } else {
-                // First tap — enter confirm state
-                btn.classList.add('confirming');
-                btn.innerHTML = `⚠️ Tap again: ${cmd.label}`;
-                if (navigator.vibrate) navigator.vibrate([30, 30, 30]);
-                const timer = setTimeout(() => {
-                    btn.classList.remove('confirming');
-                    btn.innerHTML = `<span class="icon">${cmd.icon || ''}</span> ${cmd.label}`;
-                    confirmTimers.delete(btn);
-                }, 3000);
-                confirmTimers.set(btn, timer);
-            }
+            openConfirmDialog('Switch to Desktop', [
+                {
+                    label: '1 \u2014 Presentation',
+                    class: '',
+                    onSelect: () => connection.sendCommand(currentMode, 'switchDesktop1'),
+                },
+                {
+                    label: '2 \u2014 Demo',
+                    class: 'secondary',
+                    onSelect: () => connection.sendCommand(currentMode, 'switchDesktop2'),
+                },
+            ]);
+        });
+    } else if (cmd.action === 'startSlideshow') {
+        // Special: show choice dialog
+        btn.addEventListener('click', () => {
+            openConfirmDialog('Start Slideshow', [
+                {
+                    label: '▶ From Beginning',
+                    class: '',
+                    onSelect: () => connection.sendCommand(currentMode, 'startSlideshow'),
+                },
+                {
+                    label: '📍 From Current Slide',
+                    class: 'secondary',
+                    onSelect: () => connection.sendCommand(currentMode, 'startSlideshowFromCurrent'),
+                },
+            ]);
+        });
+    } else if (requireConfirm) {
+        btn.addEventListener('click', () => {
+            openConfirmDialog(cmd.label, [
+                {
+                    label: `${cmd.icon || '⚠️'} Yes, ${cmd.label}`,
+                    class: cmd.action === 'endSlideshow' ? 'danger' : (cmd.action === 'blackScreen' ? 'dark' : ''),
+                    onSelect: () => connection.sendCommand(currentMode, cmd.action),
+                },
+            ]);
         });
     } else {
         btn.addEventListener('click', () => {
@@ -485,6 +533,12 @@ function bindEvents() {
     dom.customDialogClose.addEventListener('click', closeCustomDialog);
     dom.customDialog.addEventListener('click', (e) => {
         if (e.target === dom.customDialog) closeCustomDialog();
+    });
+
+    // Confirm dialog
+    dom.confirmDialogCancel.addEventListener('click', closeConfirmDialog);
+    dom.confirmDialog.addEventListener('click', (e) => {
+        if (e.target === dom.confirmDialog) closeConfirmDialog();
     });
 
     dom.customSave.addEventListener('click', () => {
