@@ -89,6 +89,10 @@ public partial class MainForm : Form
         btnResetDefaults.Click += BtnResetDefaults_Click;
         btnSaveMappings.Click += BtnSaveMappings_Click;
 
+        // Log context menu
+        logMenuCopySelected.Click += LogMenuCopySelected_Click;
+        logMenuCopyAll.Click += LogMenuCopyAll_Click;
+
         // Service events
         _pubSubService.StatusChanged += OnStatusChanged;
         _pubSubService.CommandReceived += OnCommandReceived;
@@ -383,6 +387,7 @@ public partial class MainForm : Form
             ? KeyboardService.GetVirtualKeyCode(keyName.Substring(keyName.LastIndexOf('+') + 1))
             : KeyboardService.GetVirtualKeyCode(keyName);
         AddLogEntry(message, keyName, displayVk, keySent, formIsVisible);
+
         _messageCount++;
         messageCountLabel.Text = $"Messages: {_messageCount}";
     }
@@ -407,12 +412,14 @@ public partial class MainForm : Form
         };
     }
 
-    private void AddLogEntry(CommandMessage message, string keyName, byte vk, bool keySent, bool debugMode)
+    private void AddLogEntry(CommandMessage message, string keyName, byte vk, bool keySent, bool debugMode, string? overrideStatus = null)
     {
         var time = DateTime.Now.ToString("HH:mm:ss");
         string status;
 
-        if (vk == 0)
+        if (overrideStatus is not null)
+            status = overrideStatus;
+        else if (vk == 0)
             status = "(unknown key)";
         else if (debugMode)
             status = $"{keyName} — DEBUG (not sent)";
@@ -423,12 +430,12 @@ public partial class MainForm : Form
 
         var item = new ListViewItem(new[] { time, message.Mode, message.Action, status });
 
-        if (debugMode)
+        if (debugMode && overrideStatus is null)
         {
             item.BackColor = Color.DarkSlateBlue;
             item.ForeColor = Color.White;
         }
-        else if (vk == 0)
+        else if (vk == 0 && overrideStatus is null)
         {
             item.ForeColor = Color.Gray;
         }
@@ -441,6 +448,46 @@ public partial class MainForm : Form
         {
             lvLog.Items.RemoveAt(lvLog.Items.Count - 1);
         }
+    }
+
+    // ───────── Log Copy ─────────
+
+    private static string FormatLogItems(ListView.ListViewItemCollection items)
+    {
+        var lines = new System.Text.StringBuilder();
+        foreach (ListViewItem item in items)
+        {
+            var cols = new string[item.SubItems.Count];
+            for (int i = 0; i < item.SubItems.Count; i++)
+                cols[i] = item.SubItems[i].Text;
+            lines.AppendLine(string.Join('\t', cols));
+        }
+        return lines.ToString();
+    }
+
+    private static string FormatLogItems(ListView.SelectedListViewItemCollection items)
+    {
+        var lines = new System.Text.StringBuilder();
+        foreach (ListViewItem item in items)
+        {
+            var cols = new string[item.SubItems.Count];
+            for (int i = 0; i < item.SubItems.Count; i++)
+                cols[i] = item.SubItems[i].Text;
+            lines.AppendLine(string.Join('\t', cols));
+        }
+        return lines.ToString();
+    }
+
+    private void LogMenuCopySelected_Click(object? sender, EventArgs e)
+    {
+        if (lvLog.SelectedItems.Count == 0) return;
+        Clipboard.SetText(FormatLogItems(lvLog.SelectedItems));
+    }
+
+    private void LogMenuCopyAll_Click(object? sender, EventArgs e)
+    {
+        if (lvLog.Items.Count == 0) return;
+        Clipboard.SetText(FormatLogItems(lvLog.Items));
     }
 
     // ───────── Mappings ─────────

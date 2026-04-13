@@ -24,6 +24,9 @@ partial class MainForm
     // Command log group
     private GroupBox grpLog;
     private ListView lvLog;
+    private ContextMenuStrip logContextMenu;
+    private ToolStripMenuItem logMenuCopyAll;
+    private ToolStripMenuItem logMenuCopySelected;
     private ColumnHeader colTime;
     private ColumnHeader colMode;
     private ColumnHeader colAction;
@@ -146,6 +149,11 @@ partial class MainForm
         grpLog.Location = new Point(12, 135);
         grpLog.Size = new Size(460, 150);
 
+        logContextMenu = new ContextMenuStrip();
+        logMenuCopySelected = new ToolStripMenuItem("Copy Selected");
+        logMenuCopyAll = new ToolStripMenuItem("Copy All");
+        logContextMenu.Items.AddRange(new ToolStripItem[] { logMenuCopySelected, logMenuCopyAll });
+
         colTime.Text = "Time";
         colTime.Width = 80;
         colMode.Text = "Mode";
@@ -161,6 +169,7 @@ partial class MainForm
         lvLog.Location = new Point(10, 22);
         lvLog.Size = new Size(440, 118);
         lvLog.Columns.AddRange(new ColumnHeader[] { colTime, colMode, colAction, colKey });
+        lvLog.ContextMenuStrip = logContextMenu;
 
         grpLog.Controls.Add(lvLog);
         grpLog.ResumeLayout(false);

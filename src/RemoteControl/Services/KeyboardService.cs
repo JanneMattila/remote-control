@@ -4,31 +4,80 @@ namespace RemoteControl.Services;
 
 /// <summary>
 /// Provides keyboard simulation using Win32 P/Invoke.
-/// Uses keybd_event for reliable key press simulation across applications.
+/// Uses SendInput for reliable key press simulation across applications.
 /// </summary>
-public static partial class KeyboardService
+public static class KeyboardService
 {
-    private const uint KEYEVENTF_KEYDOWN = 0x0000;
+    private const uint INPUT_KEYBOARD = 1;
     private const uint KEYEVENTF_KEYUP = 0x0002;
 
-    [LibraryImport("user32.dll", SetLastError = true)]
-    private static partial void keybd_event(byte bVk, byte bScan, uint dwFlags, nuint dwExtraInfo);
+    [StructLayout(LayoutKind.Sequential)]
+    private struct KEYBDINPUT
+    {
+        public ushort wVk;
+        public ushort wScan;
+        public uint dwFlags;
+        public uint time;
+        public nuint dwExtraInfo;
+    }
+
+    // MOUSEINPUT is needed to define the union size (it's the largest member).
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MOUSEINPUT
+    {
+        public int dx;
+        public int dy;
+        public uint mouseData;
+        public uint dwFlags;
+        public uint time;
+        public nuint dwExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    private struct InputUnion
+    {
+        [FieldOffset(0)] public MOUSEINPUT mi;
+        [FieldOffset(0)] public KEYBDINPUT ki;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct INPUT
+    {
+        public uint type;
+        public InputUnion u;
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+
+    private static void Send(params INPUT[] inputs)
+    {
+        SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+    }
+
+    private static INPUT KeyDown(byte vk) => new()
+    {
+        type = INPUT_KEYBOARD,
+        u = new InputUnion { ki = new KEYBDINPUT { wVk = vk } }
+    };
+
+    private static INPUT KeyUp(byte vk) => new()
+    {
+        type = INPUT_KEYBOARD,
+        u = new InputUnion { ki = new KEYBDINPUT { wVk = vk, dwFlags = KEYEVENTF_KEYUP } }
+    };
 
     /// <summary>
     /// Simulates a key press (down + up) for the specified virtual key code.
     /// </summary>
-    /// <param name="virtualKeyCode">The Windows virtual key code to simulate.</param>
     public static void SendKey(byte virtualKeyCode)
     {
-        keybd_event(virtualKeyCode, 0, KEYEVENTF_KEYDOWN, 0);
-        Thread.Sleep(50);
-        keybd_event(virtualKeyCode, 0, KEYEVENTF_KEYUP, 0);
+        Send(KeyDown(virtualKeyCode), KeyUp(virtualKeyCode));
     }
 
     /// <summary>
     /// Simulates a key press using a <see cref="Keys"/> enum value.
     /// </summary>
-    /// <param name="key">The key to simulate.</param>
     public static void SendKey(Keys key)
     {
         SendKey((byte)key);
@@ -39,13 +88,12 @@ public static partial class KeyboardService
     /// </summary>
     public static void SendKeyCombination(byte modifier, byte virtualKeyCode)
     {
-        keybd_event(modifier, 0, KEYEVENTF_KEYDOWN, 0);
-        Thread.Sleep(30);
-        keybd_event(virtualKeyCode, 0, KEYEVENTF_KEYDOWN, 0);
-        Thread.Sleep(50);
-        keybd_event(virtualKeyCode, 0, KEYEVENTF_KEYUP, 0);
-        Thread.Sleep(30);
-        keybd_event(modifier, 0, KEYEVENTF_KEYUP, 0);
+        Send(
+            KeyDown(modifier),
+            KeyDown(virtualKeyCode),
+            KeyUp(virtualKeyCode),
+            KeyUp(modifier)
+        );
     }
 
     /// <summary>
@@ -53,17 +101,14 @@ public static partial class KeyboardService
     /// </summary>
     public static void SendKeyCombination(byte modifier1, byte modifier2, byte virtualKeyCode)
     {
-        keybd_event(modifier1, 0, KEYEVENTF_KEYDOWN, 0);
-        Thread.Sleep(20);
-        keybd_event(modifier2, 0, KEYEVENTF_KEYDOWN, 0);
-        Thread.Sleep(20);
-        keybd_event(virtualKeyCode, 0, KEYEVENTF_KEYDOWN, 0);
-        Thread.Sleep(50);
-        keybd_event(virtualKeyCode, 0, KEYEVENTF_KEYUP, 0);
-        Thread.Sleep(20);
-        keybd_event(modifier2, 0, KEYEVENTF_KEYUP, 0);
-        Thread.Sleep(20);
-        keybd_event(modifier1, 0, KEYEVENTF_KEYUP, 0);
+        Send(
+            KeyDown(modifier1),
+            KeyDown(modifier2),
+            KeyDown(virtualKeyCode),
+            KeyUp(virtualKeyCode),
+            KeyUp(modifier2),
+            KeyUp(modifier1)
+        );
     }
 
     /// <summary>
