@@ -252,6 +252,9 @@ body {
     cursor: pointer;
     transition: transform 0.1s ease, filter 0.1s ease, background 0.2s ease;
     color: var(--text-primary);
+    word-break: break-word;
+    text-align: center;
+    overflow-wrap: break-word;
 }
 
 .cmd-btn:active {
@@ -628,6 +631,33 @@ body {
     border: none;
     border-top: 1px solid rgba(255,255,255,0.08);
     margin: 16px 0;
+}
+
+/* ---- Responsive: narrow mobile screens ---- */
+@media (max-width: 400px) {
+    .commands-top[data-mode="powerpoint"] {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .commands-top[data-mode="powerpoint"] .cmd-btn:last-child {
+        grid-column: 1 / -1;
+    }
+
+    .commands-top .cmd-btn {
+        padding: 10px 8px;
+        font-size: 0.85rem;
+        min-height: 44px;
+    }
+
+    .commands-top .cmd-btn .icon {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 340px) {
+    .commands-top[data-mode="powerpoint"] {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ---- Scrollbar ---- */
