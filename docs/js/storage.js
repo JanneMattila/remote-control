@@ -1,17 +1,26 @@
 export const StorageKeys = {
-    CONNECTION_URL: 'rc_connection_url',
+    CONNECTION_STRING: 'rc_connection_string',
+    HUB_NAME: 'rc_hub_name',
     TIMER_STATE: 'rc_timer_state',
     SELECTED_MODE: 'rc_selected_mode',
     CUSTOM_COMMANDS: 'rc_custom_commands',
     TIMER_PREFS: 'rc_timer_prefs',
 };
 
-export function saveConnectionUrl(url) {
-    localStorage.setItem(StorageKeys.CONNECTION_URL, url);
+export function saveConnectionString(connStr) {
+    localStorage.setItem(StorageKeys.CONNECTION_STRING, connStr);
 }
 
-export function getConnectionUrl() {
-    return localStorage.getItem(StorageKeys.CONNECTION_URL) || '';
+export function getConnectionString() {
+    return localStorage.getItem(StorageKeys.CONNECTION_STRING) || '';
+}
+
+export function saveHubName(hub) {
+    localStorage.setItem(StorageKeys.HUB_NAME, hub);
+}
+
+export function getHubName() {
+    return localStorage.getItem(StorageKeys.HUB_NAME) || 'Hub';
 }
 
 export function saveSelectedMode(mode) {
@@ -56,11 +65,11 @@ export function downloadConfigFile() {
 }
 
 export function clearAll() {
-    const connectionUrl = localStorage.getItem(StorageKeys.CONNECTION_URL);
+    const connStr = localStorage.getItem(StorageKeys.CONNECTION_STRING);
+    const hub = localStorage.getItem(StorageKeys.HUB_NAME);
     for (const key of Object.values(StorageKeys)) {
         localStorage.removeItem(key);
     }
-    if (connectionUrl) {
-        localStorage.setItem(StorageKeys.CONNECTION_URL, connectionUrl);
-    }
+    if (connStr) localStorage.setItem(StorageKeys.CONNECTION_STRING, connStr);
+    if (hub) localStorage.setItem(StorageKeys.HUB_NAME, hub);
 }

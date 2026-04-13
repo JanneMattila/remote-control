@@ -2,7 +2,8 @@ import { ConnectionManager } from './connection.js';
 import { Timer } from './timer.js';
 import { MODES, getCustomCommands, saveCustomCommands, addCustomCommand, removeCustomCommand } from './modes.js';
 import {
-    saveConnectionUrl, getConnectionUrl,
+    saveConnectionString, getConnectionString,
+    saveHubName, getHubName,
     saveSelectedMode, getSelectedMode,
     exportConfig, importConfig, downloadConfigFile, clearAll, StorageKeys,
 } from './storage.js';
@@ -16,7 +17,8 @@ const $$ = (sel) => document.querySelectorAll(sel);
 const dom = {
     // Setup
     setupScreen: $('#setup-screen'),
-    setupUrl: $('#setup-url'),
+    setupConnStr: $('#setup-connstr'),
+    setupHub: $('#setup-hub'),
     setupConnect: $('#setup-connect'),
     // Timer bar
     timerDisplay: $('#timer-display'),
@@ -32,7 +34,9 @@ const dom = {
     // Settings overlay
     settingsOverlay: $('#settings-overlay'),
     settingsClose: $('#settings-close'),
-    settingsUrl: $('#settings-url'),
+    settingsConnStr: $('#settings-connstr'),
+    settingsHub: $('#settings-hub'),
+    settingsHeartbeat: $('#settings-heartbeat'),
     settingsUrlSave: $('#settings-url-save'),
     settingsExport: $('#settings-export'),
     settingsImportFile: $('#settings-import-file'),
@@ -272,7 +276,9 @@ function closeCustomDialog() {
    Settings Overlay
    ================================================ */
 function openSettings() {
-    dom.settingsUrl.value = getConnectionUrl();
+    dom.settingsConnStr.value = getConnectionString();
+    dom.settingsHub.value = getHubName();
+    dom.settingsHeartbeat.checked = localStorage.getItem('rc_heartbeat') === '1';
     dom.settingsOverlay.classList.add('open');
     updateTimerSettingsUI();
 }
@@ -298,11 +304,13 @@ function hideSetup() {
     dom.setupScreen.classList.add('hidden');
 }
 
-function connectWithUrl(url) {
-    if (!url || !url.trim()) return;
-    url = url.trim();
-    saveConnectionUrl(url);
-    connection.connect(url);
+function connectWithSettings(connStr, hub) {
+    if (!connStr || !connStr.trim()) return;
+    connStr = connStr.trim();
+    hub = (hub || 'Hub').trim();
+    saveConnectionString(connStr);
+    saveHubName(hub);
+    connection.connect(connStr, hub);
     hideSetup();
 }
 
@@ -312,10 +320,10 @@ function connectWithUrl(url) {
 function bindEvents() {
     // Setup screen
     dom.setupConnect.addEventListener('click', () => {
-        connectWithUrl(dom.setupUrl.value);
+        connectWithSettings(dom.setupConnStr.value, dom.setupHub.value);
     });
-    dom.setupUrl.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') connectWithUrl(dom.setupUrl.value);
+    dom.setupConnStr.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') connectWithSettings(dom.setupConnStr.value, dom.setupHub.value);
     });
 
     // Timer bar controls
@@ -348,16 +356,24 @@ function bindEvents() {
 
     // Settings: connection URL
     dom.settingsUrlSave.addEventListener('click', () => {
-        const url = dom.settingsUrl.value.trim();
-        if (url) {
+        const connStr = dom.settingsConnStr.value.trim();
+        const hub = dom.settingsHub.value.trim() || 'Hub';
+        if (connStr) {
             connection.disconnect();
-            connectWithUrl(url);
+            connectWithSettings(connStr, hub);
             closeSettings();
         }
     });
 
     dom.settingsDisconnect.addEventListener('click', () => {
         connection.disconnect();
+    });
+
+    // Heartbeat toggle
+    dom.settingsHeartbeat.addEventListener('change', () => {
+        const enabled = dom.settingsHeartbeat.checked;
+        localStorage.setItem('rc_heartbeat', enabled ? '1' : '0');
+        connection.setHeartbeat(enabled);
     });
 
     // Settings: export / import / clear
@@ -373,10 +389,10 @@ function bindEvents() {
             try {
                 importConfig(ev.target.result);
                 // Reload state
-                const url = getConnectionUrl();
-                if (url) {
+                const cs = getConnectionString();
+                if (cs) {
                     connection.disconnect();
-                    connection.connect(url);
+                    connection.connect(cs, getHubName());
                 }
                 currentMode = getSelectedMode();
                 renderModeTabs();
@@ -510,10 +526,14 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTimerDisplay();
 
     // Check for stored connection URL
-    const storedUrl = getConnectionUrl();
-    if (storedUrl) {
+    const storedConnStr = getConnectionString();
+    if (storedConnStr) {
         hideSetup();
-        connection.connect(storedUrl);
+        // Restore heartbeat setting before connecting
+        if (localStorage.getItem('rc_heartbeat') === '1') {
+            connection.setHeartbeat(true);
+        }
+        connection.connect(storedConnStr, getHubName());
     } else {
         showSetup();
     }

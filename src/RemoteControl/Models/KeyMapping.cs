@@ -42,9 +42,14 @@ public class KeyMappingConfig
     public Dictionary<string, string> Mappings { get; set; } = new();
 
     /// <summary>
-    /// The saved Azure Web PubSub client access URL.
+    /// The saved Azure Web PubSub connection string.
     /// </summary>
-    public string ConnectionUrl { get; set; } = "";
+    public string ConnectionString { get; set; } = "";
+
+    /// <summary>
+    /// The hub name for the Web PubSub connection.
+    /// </summary>
+    public string HubName { get; set; } = "Hub";
 
     /// <summary>
     /// Returns the default key mapping configuration.
@@ -68,7 +73,8 @@ public class KeyMappingConfig
                 ["skipForward"] = "Right",
                 ["skipBack"] = "Left"
             },
-            ConnectionUrl = ""
+            ConnectionString = "",
+            HubName = "Hub"
         };
     }
 

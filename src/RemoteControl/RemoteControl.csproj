@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Messaging.WebPubSub" Version="1.*" />
     <PackageReference Include="Azure.Messaging.WebPubSub.Client" Version="1.*" />
   </ItemGroup>
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#5dade2">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Remote Control</title>
     <link rel="manifest" href="manifest.json">
@@ -22,14 +22,18 @@
         <p class="subtitle">Connect to Azure Web PubSub</p>
         <div class="instructions">
             <ol>
-                <li>Generate a <strong>Client Access URL</strong> from your Azure Web PubSub service.</li>
-                <li>The URL starts with <code>wss://</code> and contains an access token.</li>
+                <li>Copy the <strong>Connection String</strong> from your Azure Web PubSub service (Keys page).</li>
+                <li>It starts with <code>Endpoint=https://...</code></li>
                 <li>Paste it below and tap <strong>Connect</strong>.</li>
             </ol>
         </div>
         <div class="field-group">
-            <label for="setup-url">Client Access URL</label>
-            <input id="setup-url" type="url" placeholder="wss://your-service.webpubsub.azure.com/..." autocomplete="off" autocapitalize="off" spellcheck="false">
+            <label for="setup-connstr">Connection String</label>
+            <input id="setup-connstr" type="text" placeholder="Endpoint=https://...;AccessKey=...;Version=1.0;" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </div>
+        <div class="field-group">
+            <label for="setup-hub">Hub Name</label>
+            <input id="setup-hub" type="text" placeholder="Hub" value="Hub" autocomplete="off" spellcheck="false">
         </div>
         <button id="setup-connect" class="btn-action primary" style="width:100%">Connect</button>
     </div>
@@ -68,12 +72,23 @@
 
         <!-- Connection -->
         <div class="field-group">
-            <label for="settings-url">Client Access URL</label>
-            <input id="settings-url" type="url" placeholder="wss://..." autocomplete="off" autocapitalize="off" spellcheck="false">
+            <label for="settings-connstr">Connection String</label>
+            <input id="settings-connstr" type="text" placeholder="Endpoint=https://...;AccessKey=...;Version=1.0;" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </div>
+        <div class="field-group">
+            <label for="settings-hub">Hub Name</label>
+            <input id="settings-hub" type="text" placeholder="Hub" autocomplete="off" spellcheck="false">
         </div>
         <div class="btn-row">
             <button id="settings-url-save" class="btn-action primary">Save &amp; Reconnect</button>
             <button id="settings-disconnect" class="btn-action secondary">Disconnect</button>
+        </div>
+
+        <!-- Heartbeat -->
+        <div class="field-group" style="margin-top:12px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input id="settings-heartbeat" type="checkbox"> Enable heartbeat (receiver presence detection)
+            </label>
         </div>
 
         <!-- Timer Settings -->

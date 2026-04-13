@@ -1,4 +1,4 @@
-const CACHE_NAME = 'remote-control-v4';
+const CACHE_NAME = 'remote-control-v10';
 const ASSETS = [
     './',
     './index.htm',

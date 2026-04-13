@@ -46,14 +46,9 @@ A two-app system for remotely controlling presentations, media players, and cust
 ### 1. Configure Azure Web PubSub
 
 1. Create an Azure Web PubSub resource in the [Azure Portal](https://portal.azure.com).
-2. Go to **Keys** and note the connection string.
-3. Generate a **Client Access URL** for the SPA:
-   - Use the Azure Portal **Client URL Generator** (under **Keys**), or
-   - Use the Azure CLI / SDK to generate a URL with the following roles:
-     - `webpubsub.joinLeaveGroup`
-     - `webpubsub.sendToGroup.remote`
-   - The URL looks like: `wss://your-service.webpubsub.azure.com/client/hubs/Hub?access_token=...`
-4. Generate a separate Client Access URL for the Receiver with at least `webpubsub.joinLeaveGroup` permission.
+2. Go to **Keys** and copy the **Connection String** (starts with `Endpoint=https://...;AccessKey=...;Version=1.0;`).
+3. Note the **Hub Name** you want to use (default: `Hub`). You can create a hub or use the default.
+4. Paste the connection string into both the SPA and the Receiver app. Both apps generate their own access tokens from the connection string — no expiring URLs to manage.
 
 ### 2. Test the SPA Locally
 
@@ -127,7 +122,8 @@ The receiver stores key mappings in `usersettings.json` next to the executable. 
     "prevSlide": "Left",
     "playPause": "Space"
   },
-  "ConnectionUrl": "wss://..."
+  "ConnectionString": "Endpoint=https://...;AccessKey=...;Version=1.0;",
+  "HubName": "Hub"
 }
 ```
 

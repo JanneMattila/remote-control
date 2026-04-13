@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Azure.Messaging.WebPubSub;
 using Azure.Messaging.WebPubSub.Clients;
 using RemoteControl.Models;
 
@@ -35,11 +36,12 @@ public class WebPubSubService : IDisposable
     public bool IsConnected { get; private set; }
 
     /// <summary>
-    /// Connects to Azure Web PubSub using the provided Client Access URL
-    /// and joins the "remote" group to receive command messages.
+    /// Connects to Azure Web PubSub using the provided connection string and hub name.
+    /// Generates a Client Access URL with the required permissions and joins the "remote" group.
     /// </summary>
-    /// <param name="clientAccessUrl">The full Client Access URL including the access token.</param>
-    public async Task ConnectAsync(string clientAccessUrl)
+    /// <param name="connectionString">The Azure Web PubSub connection string.</param>
+    /// <param name="hubName">The hub name (default: "Hub").</param>
+    public async Task ConnectAsync(string connectionString, string hubName = "Hub")
     {
         if (_disposed)
             throw new ObjectDisposedException(nameof(WebPubSubService));
@@ -49,7 +51,14 @@ public class WebPubSubService : IDisposable
         StatusChanged?.Invoke("Connecting");
 
         _cts = new CancellationTokenSource();
-        _client = new WebPubSubClient(new Uri(clientAccessUrl));
+
+        // Generate the client access URI using the service client
+        var serviceClient = new WebPubSubServiceClient(connectionString, hubName);
+        var clientAccessUri = await serviceClient.GetClientAccessUriAsync(
+            userId: "receiver",
+            roles: ["webpubsub.joinLeaveGroup", "webpubsub.sendToGroup"]);
+
+        _client = new WebPubSubClient(clientAccessUri);
 
         _client.Connected += (args) =>
         {
@@ -80,14 +89,14 @@ public class WebPubSubService : IDisposable
                 var message = JsonSerializer.Deserialize<CommandMessage>(json);
                 if (message is null) return Task.CompletedTask;
 
+                // Ignore our own messages (echo from group)
+                if (string.Equals(message.Source, "receiver", StringComparison.OrdinalIgnoreCase))
+                    return Task.CompletedTask;
+
                 // Notify about any received message
                 MessageReceived?.Invoke(message.Type, DateTime.Now);
 
-                if (string.Equals(message.Type, "heartbeat", StringComparison.OrdinalIgnoreCase))
-                {
-                    _ = SendHeartbeatResponseAsync();
-                }
-                else if (string.Equals(message.Type, "command", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(message.Type, "command", StringComparison.OrdinalIgnoreCase))
                 {
                     CommandReceived?.Invoke(message);
                 }
@@ -101,21 +110,6 @@ public class WebPubSubService : IDisposable
 
         await _client.StartAsync(_cts.Token);
         await _client.JoinGroupAsync("remote");
-    }
-
-    private async Task SendHeartbeatResponseAsync()
-    {
-        if (_client is null || !IsConnected) return;
-        try
-        {
-            var payload = BinaryData.FromString(
-                JsonSerializer.Serialize(new { type = "heartbeat", source = "receiver", timestamp = DateTime.UtcNow }));
-            await _client.SendToGroupAsync("remote", payload, WebPubSubDataType.Json);
-        }
-        catch
-        {
-            // Best-effort heartbeat
-        }
     }
 
     /// <summary>

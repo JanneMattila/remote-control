@@ -14,8 +14,10 @@ partial class MainForm
 
     // Connection group
     private GroupBox grpConnection;
-    private Label lblUrl;
-    private TextBox txtUrl;
+    private Label lblConnStr;
+    private TextBox txtConnStr;
+    private Label lblHub;
+    private TextBox txtHub;
     private Button btnConnect;
     private Label lblStatus;
 
@@ -81,8 +83,10 @@ partial class MainForm
 
         // === Connection GroupBox ===
         grpConnection = new GroupBox();
-        lblUrl = new Label();
-        txtUrl = new TextBox();
+        lblConnStr = new Label();
+        txtConnStr = new TextBox();
+        lblHub = new Label();
+        txtHub = new TextBox();
         btnConnect = new Button();
         lblStatus = new Label();
 
@@ -90,28 +94,39 @@ partial class MainForm
 
         grpConnection.Text = "Connection";
         grpConnection.Location = new Point(12, 12);
-        grpConnection.Size = new Size(460, 90);
+        grpConnection.Size = new Size(460, 115);
 
-        lblUrl.Text = "Client Access URL:";
-        lblUrl.Location = new Point(10, 25);
-        lblUrl.AutoSize = true;
+        lblConnStr.Text = "Connection String:";
+        lblConnStr.Location = new Point(10, 25);
+        lblConnStr.AutoSize = true;
 
-        txtUrl.Location = new Point(130, 22);
-        txtUrl.Size = new Size(220, 23);
-        txtUrl.PlaceholderText = "wss://...webpubsub.azure.com/...";
+        txtConnStr.Location = new Point(130, 22);
+        txtConnStr.Size = new Size(318, 23);
+        txtConnStr.PlaceholderText = "Endpoint=https://...;AccessKey=...;Version=1.0;";
+        txtConnStr.UseSystemPasswordChar = true;
+
+        lblHub.Text = "Hub Name:";
+        lblHub.Location = new Point(10, 55);
+        lblHub.AutoSize = true;
+
+        txtHub.Location = new Point(130, 52);
+        txtHub.Size = new Size(130, 23);
+        txtHub.Text = "Hub";
 
         btnConnect.Text = "Connect";
-        btnConnect.Location = new Point(360, 21);
+        btnConnect.Location = new Point(360, 51);
         btnConnect.Size = new Size(90, 25);
 
         lblStatus.Text = "Disconnected";
         lblStatus.ForeColor = Color.Red;
-        lblStatus.Location = new Point(130, 55);
+        lblStatus.Location = new Point(130, 85);
         lblStatus.AutoSize = true;
         lblStatus.Font = new Font(lblStatus.Font, FontStyle.Bold);
 
-        grpConnection.Controls.Add(lblUrl);
-        grpConnection.Controls.Add(txtUrl);
+        grpConnection.Controls.Add(lblConnStr);
+        grpConnection.Controls.Add(txtConnStr);
+        grpConnection.Controls.Add(lblHub);
+        grpConnection.Controls.Add(txtHub);
         grpConnection.Controls.Add(btnConnect);
         grpConnection.Controls.Add(lblStatus);
         grpConnection.ResumeLayout(false);
@@ -128,7 +143,7 @@ partial class MainForm
         grpLog.SuspendLayout();
 
         grpLog.Text = "Command Log";
-        grpLog.Location = new Point(12, 110);
+        grpLog.Location = new Point(12, 135);
         grpLog.Size = new Size(460, 150);
 
         colTime.Text = "Time";
@@ -163,7 +178,7 @@ partial class MainForm
         ((System.ComponentModel.ISupportInitialize)dgvMappings).BeginInit();
 
         grpMappings.Text = "Key Mappings";
-        grpMappings.Location = new Point(12, 268);
+        grpMappings.Location = new Point(12, 293);
         grpMappings.Size = new Size(460, 200);
 
         colMappingAction.HeaderText = "Action";
@@ -242,7 +257,7 @@ partial class MainForm
 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(484, 501);
+        ClientSize = new Size(484, 526);
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         MinimizeBox = true;

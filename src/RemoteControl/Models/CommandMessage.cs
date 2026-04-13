@@ -31,4 +31,10 @@ public class CommandMessage
     /// </summary>
     [JsonPropertyName("timestamp")]
     public string Timestamp { get; set; } = "";
+
+    /// <summary>
+    /// The source of the message (e.g., "remote", "receiver"). Used to filter self-sent messages.
+    /// </summary>
+    [JsonPropertyName("source")]
+    public string Source { get; set; } = "";
 }

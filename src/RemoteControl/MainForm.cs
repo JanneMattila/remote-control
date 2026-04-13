@@ -35,7 +35,8 @@ public partial class MainForm : Form
     private void LoadConfiguration()
     {
         _config = KeyMappingConfig.Load(KeyMappingConfig.GetSettingsPath());
-        txtUrl.Text = _config.ConnectionUrl;
+        txtConnStr.Text = _config.ConnectionString;
+        txtHub.Text = string.IsNullOrEmpty(_config.HubName) ? "Hub" : _config.HubName;
         PopulateMappingsGrid();
     }
 
@@ -64,7 +65,8 @@ public partial class MainForm : Form
             }
         }
 
-        _config.ConnectionUrl = txtUrl.Text.Trim();
+        _config.ConnectionString = txtConnStr.Text.Trim();
+        _config.HubName = txtHub.Text.Trim();
         _config.Save(KeyMappingConfig.GetSettingsPath());
     }
 
@@ -108,7 +110,7 @@ public partial class MainForm : Form
         }
 
         // Auto-connect if URL is saved
-        if (!string.IsNullOrWhiteSpace(txtUrl.Text))
+        if (!string.IsNullOrWhiteSpace(txtConnStr.Text))
         {
             await ConnectAsync();
         }
@@ -180,23 +182,26 @@ public partial class MainForm : Form
 
     private async Task ConnectAsync()
     {
-        var url = txtUrl.Text.Trim();
-        if (string.IsNullOrEmpty(url))
+        var connStr = txtConnStr.Text.Trim();
+        var hub = txtHub.Text.Trim();
+        if (string.IsNullOrEmpty(connStr))
         {
             MessageBox.Show(
-                "Please enter a Client Access URL.",
+                "Please enter a Connection String.",
                 "Connection",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);
             return;
         }
+        if (string.IsNullOrEmpty(hub)) hub = "Hub";
 
         try
         {
             btnConnect.Enabled = false;
-            _config.ConnectionUrl = url;
+            _config.ConnectionString = connStr;
+            _config.HubName = hub;
             SaveConfiguration();
-            await _pubSubService.ConnectAsync(url);
+            await _pubSubService.ConnectAsync(connStr, hub);
         }
         catch (Exception ex)
         {
