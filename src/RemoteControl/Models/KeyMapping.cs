@@ -74,7 +74,10 @@ public class KeyMappingConfig
                 ["skipForward"] = "Right",
                 ["skipBack"] = "Left",
                 ["switchDesktop1"] = "Win+Ctrl+Left",
-                ["switchDesktop2"] = "Win+Ctrl+Right"
+                ["switchDesktop2"] = "Win+Ctrl+Right",
+                ["switchDesktop3"] = "Win+Ctrl+Down",
+                ["nextKeyboard"] = "Right",
+                ["prevKeyboard"] = "Left"
             },
             ConnectionString = "",
             HubName = "Hub"
@@ -142,7 +145,8 @@ public class KeyMappingConfig
             ["skipForward"] = "Skip Forward",
             ["skipBack"] = "Skip Back",
             ["switchDesktop1"] = "Switch Desktop 1",
-            ["switchDesktop2"] = "Switch Desktop 2"
+            ["switchDesktop2"] = "Switch Desktop 2",
+            ["switchDesktop3"] = "Switch Desktop 3"
         };
     }
 }

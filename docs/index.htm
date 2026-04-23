@@ -45,12 +45,17 @@
         <button id="timer-play-pause" class="timer-btn" aria-label="Play/Pause">▶</button>
         <button id="timer-reset" class="timer-btn" aria-label="Reset">↺</button>
     </div>
-    <div id="timer-display" class="timer-display">00:00</div>
+    <div id="timer-display" class="timer-display" title="Double-click to expand">00:00</div>
     <div class="timer-bar-right">
         <span id="receiver-status" class="receiver-status" title="Receiver status">📡</span>
         <span id="status-dot" class="status-dot" title="Connection status"></span>
         <button id="gear-btn" class="gear-btn" aria-label="Settings">⚙️</button>
     </div>
+</div>
+
+<!-- ============ Timer Fullscreen Overlay ============ -->
+<div id="timer-fullscreen" class="timer-fullscreen">
+    <div id="timer-fullscreen-display" class="timer-fullscreen-display">00:00</div>
 </div>
 
 <!-- ============ Main Content ============ -->
@@ -123,6 +128,9 @@
         <div class="btn-row mt-12">
             <button id="settings-clear" class="btn-action danger">Refresh App</button>
             <button id="settings-refresh" class="btn-action secondary">🔄 Check for Updates</button>
+        </div>
+        <div class="btn-row mt-12">
+            <button id="settings-reload-keyboard" class="btn-action secondary">⌨ Reload Keyboard Sequences</button>
         </div>
     </div>
 </div>

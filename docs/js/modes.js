@@ -29,6 +29,15 @@ export const MODES = {
             { action: 'mute', label: 'Mute', icon: '🔇', class: 'btn-secondary' },
             { action: 'fullscreen', label: 'Fullscreen', icon: '⛶', class: 'btn-accent' },
         ]
+    },
+    keyboard: {
+        name: 'Keyboard',
+        icon: '⌨',
+        commands: [
+            { action: 'nextKeyboard', label: 'Next', icon: '▶', class: 'btn-primary btn-large' },
+            { action: 'prevKeyboard', label: 'Previous', icon: '◀', class: 'btn-secondary btn-large' },
+        ],
+        critical: []
     }
 };
 
@@ -67,4 +76,32 @@ export function editCustomCommand(index, label, action, icon) {
         saveCustomCommands(commands);
     }
     return commands;
+}
+
+export function getKeyboardSequences() {
+    const stored = localStorage.getItem(StorageKeys.KEYBOARD_SEQUENCES);
+    if (!stored) return [];
+    try {
+        return JSON.parse(stored);
+    } catch {
+        return [];
+    }
+}
+
+export function saveKeyboardSequences(sequences) {
+    localStorage.setItem(StorageKeys.KEYBOARD_SEQUENCES, JSON.stringify(sequences));
+}
+
+export function addKeyboardSequence(text) {
+    const sequences = getKeyboardSequences();
+    sequences.push(text);
+    saveKeyboardSequences(sequences);
+    return sequences;
+}
+
+export function removeKeyboardSequence(index) {
+    const sequences = getKeyboardSequences();
+    sequences.splice(index, 1);
+    saveKeyboardSequences(sequences);
+    return sequences;
 }

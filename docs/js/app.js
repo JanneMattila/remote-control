@@ -22,6 +22,8 @@ const dom = {
     setupConnect: $('#setup-connect'),
     // Timer bar
     timerDisplay: $('#timer-display'),
+    timerFullscreen: $('#timer-fullscreen'),
+    timerFullscreenDisplay: $('#timer-fullscreen-display'),
     timerPlayPause: $('#timer-play-pause'),
     timerReset: $('#timer-reset'),
     statusDot: $('#status-dot'),
@@ -42,6 +44,7 @@ const dom = {
     settingsImportFile: $('#settings-import-file'),
     settingsClear: $('#settings-clear'),
     settingsRefresh: $('#settings-refresh'),
+    settingsReloadKeyboard: $('#settings-reload-keyboard'),
     settingsDisconnect: $('#settings-disconnect'),
     // Timer settings within overlay
     timerModeStopwatch: $('#timer-mode-stopwatch'),
@@ -73,6 +76,9 @@ let currentMode = getSelectedMode();
 let timerSettingMode = 'stopwatch'; // which mode the settings panel shows
 let editingCustomIndex = -1;        // -1 = adding new
 let wakeLock = null;
+let keyboardSequences = [];         // sequences fetched from receiver for keyboard mode
+let currentKeyboardIndex = 0;       // which sequence is highlighted/current
+let pendingKeyboardReload = false;  // true when user manually triggered a reload
 
 /* ================================================
    Connection Manager
@@ -82,13 +88,27 @@ const connection = new ConnectionManager(onStatusChange, onMessage);
 function onStatusChange(status) {
     const dot = dom.statusDot;
     dot.className = 'status-dot';
-    if (status === 'connected') dot.classList.add('connected');
-    else if (status === 'connecting') dot.classList.add('connecting');
+    if (status === 'connected') {
+        dot.classList.add('connected');
+        connection.sendCommand('keyboard', 'getKeyboardSequences');
+    } else if (status === 'connecting') dot.classList.add('connecting');
 }
 
 function onMessage(data) {
-    // For now, just log inbound messages — future: display on screen
-    console.log('[Remote] Received:', data);
+    // Handle keyboard sequences response from receiver
+    if (data.type === 'keyboardSequences' && Array.isArray(data.data)) {
+        keyboardSequences = data.data;
+        currentKeyboardIndex = 0;
+        if (pendingKeyboardReload) {
+            pendingKeyboardReload = false;
+            const n = keyboardSequences.length;
+            showToast(`⌨ Loaded ${n} sequence${n !== 1 ? 's' : ''}`);
+        }
+        // Re-render if we're currently in keyboard mode
+        if (currentMode === 'keyboard') {
+            renderCommands();
+        }
+    }
 }
 
 /* ================================================
@@ -110,11 +130,16 @@ function onTimerAlert() {
 function updateTimerDisplay() {
     const display = timer.getDisplay();
     dom.timerDisplay.textContent = display;
+    dom.timerFullscreenDisplay.textContent = display;
+    // Sync classes to fullscreen display
+    dom.timerFullscreenDisplay.className = 'timer-fullscreen-display';
     dom.timerDisplay.classList.remove('countdown', 'alert');
     if (timer.mode === 'countdown' && timer.isRunning) {
         dom.timerDisplay.classList.add('countdown');
+        dom.timerFullscreenDisplay.classList.add('countdown');
         if (timer.getRemainingMs() <= 0) {
             dom.timerDisplay.classList.add('alert');
+            dom.timerFullscreenDisplay.classList.add('alert');
         }
     }
     // Update play/pause button
@@ -162,6 +187,7 @@ function switchMode(mode) {
     currentMode = mode;
     saveSelectedMode(mode);
     renderModeTabs();
+    
     renderCommands();
 }
 
@@ -173,7 +199,85 @@ function renderCommands() {
     topArea.dataset.mode = currentMode;
     bottomArea.dataset.mode = currentMode;
 
-    if (currentMode === 'custom') {
+    if (currentMode === 'keyboard') {
+        // Keyboard mode: sequences + nav buttons all in bottom area, top hidden
+        topArea.classList.add('hidden');
+        const mode = MODES[currentMode];
+        const navCmds = mode?.commands || [];
+
+        // Keyboard sequences in bottom area
+        if (keyboardSequences.length === 0) {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'placeholder-message';
+            placeholder.textContent = 'No sequences available. Check receiver connection.';
+            placeholder.style.padding = '20px';
+            placeholder.style.textAlign = 'center';
+            placeholder.style.color = 'var(--text-secondary)';
+            bottomArea.appendChild(placeholder);
+        } else {
+            for (let i = 0; i < keyboardSequences.length; i++) {
+                const seq = keyboardSequences[i];
+                const btn = document.createElement('button');
+                const seqId = seq.id || seq.Id || '';
+                const seqLabel = seq.label || seq.Label || seq.text || seq.Text || '(empty sequence)';
+                const seqIcon = seq.icon || seq.Icon || '⌨';
+                const isCurrent = i === currentKeyboardIndex;
+                const activePill = isCurrent ? '<span class="keyboard-active-pill">ACTIVE</span>' : '';
+                btn.className = 'cmd-btn btn-secondary keyboard-seq' + (isCurrent ? ' keyboard-current' : '');
+                btn.innerHTML = `<span class="icon">${seqIcon}</span><span class="keyboard-seq-text">${seqLabel}</span>${activePill}`;
+                btn.addEventListener('click', () => {
+                    currentKeyboardIndex = i;
+                    renderCommands();
+                });
+                btn.addEventListener('dblclick', () => {
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    currentKeyboardIndex = i;
+                    if (seqId) {
+                        connection.sendCommand(currentMode, seqId);
+                    }
+                    renderCommands();
+                });
+                bottomArea.appendChild(btn);
+            }
+        }
+
+        // Navigation buttons in explicit order: Previous above Next at the bottom.
+        const prevCmd = navCmds.find(c => c.action === 'prevKeyboard');
+        const nextCmd = navCmds.find(c => c.action === 'nextKeyboard');
+
+        const buildNavBtn = (cmd, direction) => {
+            if (!cmd) return null;
+            const btn = document.createElement('button');
+            const navClass = direction === 'next' ? 'keyboard-nav-next' : 'keyboard-nav-prev';
+            btn.className = `cmd-btn ${cmd.class || 'btn-secondary'} ${navClass}`;
+            btn.innerHTML = `<span class="icon">${cmd.icon || ''}</span> ${cmd.label}`;
+            btn.addEventListener('click', () => {
+                if (keyboardSequences.length === 0) return;
+                if (navigator.vibrate) navigator.vibrate(50);
+                if (direction === 'next') {
+                    currentKeyboardIndex = (currentKeyboardIndex + 1) % keyboardSequences.length;
+                } else {
+                    currentKeyboardIndex = (currentKeyboardIndex - 1 + keyboardSequences.length) % keyboardSequences.length;
+                }
+                renderCommands();
+            });
+            btn.addEventListener('dblclick', () => {
+                if (keyboardSequences.length === 0) return;
+                if (navigator.vibrate) navigator.vibrate(50);
+                const seq = keyboardSequences[currentKeyboardIndex] || {};
+                const seqId = seq.id || seq.Id || '';
+                if (seqId) {
+                    connection.sendCommand(currentMode, seqId);
+                }
+            });
+            return btn;
+        };
+
+        const prevBtn = buildNavBtn(prevCmd, 'prev');
+        const nextBtn = buildNavBtn(nextCmd, 'next');
+        if (prevBtn) bottomArea.appendChild(prevBtn);
+        if (nextBtn) bottomArea.appendChild(nextBtn);
+    } else if (currentMode === 'custom') {
         // Custom mode: all buttons in bottom area, no critical split
         topArea.classList.add('hidden');
         const commands = getCustomCommands();
@@ -246,6 +350,11 @@ function createCommandBtn(cmd, requireConfirm, customIndex) {
                     label: '2 \u2014 Demo',
                     class: 'secondary',
                     onSelect: () => connection.sendCommand(currentMode, 'switchDesktop2'),
+                },
+                {
+                    label: '3 \u2014 Code',
+                    class: 'secondary',
+                    onSelect: () => connection.sendCommand(currentMode, 'switchDesktop3'),
                 },
             ]);
         });
@@ -335,6 +444,20 @@ function closeSettings() {
     dom.settingsOverlay.classList.remove('open');
 }
 
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    // Trigger reflow so the transition fires
+    toast.getBoundingClientRect();
+    toast.classList.add('toast-visible');
+    setTimeout(() => {
+        toast.classList.remove('toast-visible');
+        toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+    }, 2500);
+}
+
 function updateTimerSettingsUI() {
     dom.timerModeStopwatch.classList.toggle('active', timerSettingMode === 'stopwatch');
     dom.timerModeCountdown.classList.toggle('active', timerSettingMode === 'countdown');
@@ -375,6 +498,14 @@ function bindEvents() {
     });
 
     // Timer bar controls
+    // Timer display: double-click to fullscreen, single click on overlay to dismiss
+    dom.timerDisplay.addEventListener('dblclick', () => {
+        dom.timerFullscreen.classList.add('open');
+    });
+    dom.timerFullscreen.addEventListener('click', () => {
+        dom.timerFullscreen.classList.remove('open');
+    });
+
     dom.timerPlayPause.addEventListener('click', () => {
         if (navigator.vibrate) navigator.vibrate(30);
         if (timer.mode === 'idle') {
@@ -484,6 +615,12 @@ function bindEvents() {
         } catch {
             location.reload();
         }
+    });
+
+    dom.settingsReloadKeyboard.addEventListener('click', () => {
+        pendingKeyboardReload = true;
+        connection.sendCommand('keyboard', 'getKeyboardSequences');
+        closeSettings();
     });
 
     // Timer settings: mode toggle

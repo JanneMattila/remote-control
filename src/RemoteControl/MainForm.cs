@@ -11,6 +11,7 @@ public partial class MainForm : Form
 {
     private readonly WebPubSubService _pubSubService = new();
     private KeyMappingConfig _config = null!;
+    private KeyboardSequencesConfig _keyboardConfig = null!;
     private int _messageCount;
     private bool _firstRun = true;
     private bool _isExiting;
@@ -22,6 +23,7 @@ public partial class MainForm : Form
     {
         InitializeComponent();
         LoadConfiguration();
+        LoadKeyboardSequences();
         WireEvents();
 
         // Timer to refresh presence/last-received display every second
@@ -38,6 +40,18 @@ public partial class MainForm : Form
         txtConnStr.Text = _config.ConnectionString;
         txtHub.Text = string.IsNullOrEmpty(_config.HubName) ? "Hub" : _config.HubName;
         PopulateMappingsGrid();
+    }
+
+    private void LoadKeyboardSequences()
+    {
+        var configPath = KeyboardSequencesConfig.GetSettingsPath();
+        _keyboardConfig = KeyboardSequencesConfig.Load(configPath);
+        
+        // Save defaults if file doesn't exist, so user can easily find and edit it
+        if (!File.Exists(configPath))
+        {
+            _keyboardConfig.Save(configPath);
+        }
     }
 
     private void PopulateMappingsGrid()
@@ -88,6 +102,7 @@ public partial class MainForm : Form
         btnConnect.Click += BtnConnect_Click;
         btnResetDefaults.Click += BtnResetDefaults_Click;
         btnSaveMappings.Click += BtnSaveMappings_Click;
+        btnReloadKeyboard.Click += BtnReloadKeyboard_Click;
 
         // Log context menu
         logMenuCopySelected.Click += LogMenuCopySelected_Click;
@@ -206,6 +221,7 @@ public partial class MainForm : Form
             _config.HubName = hub;
             SaveConfiguration();
             await _pubSubService.ConnectAsync(connStr, hub);
+                    SendKeyboardSequences();
         }
         catch (Exception ex)
         {
@@ -341,6 +357,22 @@ public partial class MainForm : Form
             return;
         }
 
+        // Handle keyboard mode special actions
+        if (string.Equals(message.Mode, "keyboard", StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.Equals(message.Action, "getKeyboardSequences", StringComparison.OrdinalIgnoreCase))
+            {
+                SendKeyboardSequences();
+                return;
+            }
+            else if (message.Action.StartsWith("seq_", StringComparison.OrdinalIgnoreCase))
+            {
+                HandleKeyboardSequence(message.Action);
+                return;
+            }
+        }
+
+        // Standard key mapping logic
         var keyName = ResolveKeyName(message.Action);
 
         // Only send key presses when the form is hidden (minimized to tray).
@@ -392,6 +424,32 @@ public partial class MainForm : Form
         messageCountLabel.Text = $"Messages: {_messageCount}";
     }
 
+    private void SendKeyboardSequences()
+    {
+        var response = new ResponseMessage
+        {
+            Type = "keyboardSequences",
+            Data = _keyboardConfig.Sequences
+        };
+        _ = _pubSubService.SendMessageAsync(response);
+    }
+
+    private void HandleKeyboardSequence(string sequenceId)
+    {
+        var sequence = _keyboardConfig.GetSequenceById(sequenceId);
+        if (sequence is null)
+            return;
+
+        bool formIsVisible = Visible && WindowState != FormWindowState.Minimized;
+        if (!formIsVisible)
+        {
+            KeyboardService.SendText(sequence.Text);
+        }
+
+        _messageCount++;
+        messageCountLabel.Text = $"Messages: {_messageCount}";
+    }
+
     private string ResolveKeyName(string action)
     {
         if (_config.Mappings.TryGetValue(action, out var keyName))
@@ -409,6 +467,16 @@ public partial class MainForm : Form
             "ALT" => (byte)Keys.Menu,
             "WIN" or "LWIN" => (byte)Keys.LWin,
             _ => 0
+        };
+    }
+
+    private static Dictionary<string, string> GetDisplayNames()
+    {
+        return new Dictionary<string, string>
+        {
+            ["switchDesktop1"] = "Desktop 1 (Presentation)",
+            ["switchDesktop2"] = "Desktop 2 (Demo)",
+            ["switchDesktop3"] = "Desktop 3 (Code)"
         };
     }
 
@@ -528,5 +596,56 @@ public partial class MainForm : Form
 
         SaveConfiguration();
         MessageBox.Show("Mappings saved.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private void BtnReloadKeyboard_Click(object? sender, EventArgs e)
+    {
+        try
+        {
+            LoadKeyboardSequences();
+            SendKeyboardSequences();
+
+            var total = _keyboardConfig.Sequences.Count;
+            var summaryLines = new List<string>();
+            var shown = Math.Min(total, 8);
+
+            string Compact(string? value, int maxLen)
+            {
+                if (string.IsNullOrWhiteSpace(value)) return "(empty)";
+                var v = value.Trim();
+                return v.Length <= maxLen ? v : v[..maxLen] + "...";
+            }
+
+            for (int i = 0; i < shown; i++)
+            {
+                var seq = _keyboardConfig.Sequences[i];
+                var label = Compact(seq.Label, 48);
+                var text = Compact(seq.Text, 64);
+                summaryLines.Add($"{i + 1}. {label} -> {text}");
+            }
+
+            if (total > shown)
+            {
+                summaryLines.Add($"... and {total - shown} more");
+            }
+
+            var summary = summaryLines.Count == 0
+                ? "No sequences found in configuration."
+                : string.Join("\n", summaryLines);
+
+            MessageBox.Show(
+                $"Keyboard sequences reloaded.\nLoaded: {total}\n\nSummary:\n{summary}",
+                "Reloaded",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Failed to reload keyboard sequences:\n{ex.Message}",
+                "Error",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
     }
 }

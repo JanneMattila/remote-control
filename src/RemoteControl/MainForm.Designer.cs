@@ -40,6 +40,7 @@ partial class MainForm
     private DataGridViewTextBoxColumn colMappingKey;
     private Button btnResetDefaults;
     private Button btnSaveMappings;
+    private Button btnReloadKeyboard;
 
     // Status strip
     private StatusStrip statusStrip;
@@ -98,6 +99,7 @@ partial class MainForm
         grpConnection.Text = "Connection";
         grpConnection.Location = new Point(12, 12);
         grpConnection.Size = new Size(460, 115);
+        grpConnection.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
         lblConnStr.Text = "Connection String:";
         lblConnStr.Location = new Point(10, 25);
@@ -105,6 +107,7 @@ partial class MainForm
 
         txtConnStr.Location = new Point(130, 22);
         txtConnStr.Size = new Size(318, 23);
+        txtConnStr.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         txtConnStr.PlaceholderText = "Endpoint=https://...;AccessKey=...;Version=1.0;";
         txtConnStr.UseSystemPasswordChar = true;
 
@@ -114,11 +117,13 @@ partial class MainForm
 
         txtHub.Location = new Point(130, 52);
         txtHub.Size = new Size(130, 23);
+        txtHub.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         txtHub.Text = "Hub";
 
         btnConnect.Text = "Connect";
         btnConnect.Location = new Point(360, 51);
         btnConnect.Size = new Size(90, 25);
+        btnConnect.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
         lblStatus.Text = "Disconnected";
         lblStatus.ForeColor = Color.Red;
@@ -148,6 +153,7 @@ partial class MainForm
         grpLog.Text = "Command Log";
         grpLog.Location = new Point(12, 135);
         grpLog.Size = new Size(460, 150);
+        grpLog.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
 
         logContextMenu = new ContextMenuStrip();
         logMenuCopySelected = new ToolStripMenuItem("Copy Selected");
@@ -168,6 +174,7 @@ partial class MainForm
         lvLog.GridLines = true;
         lvLog.Location = new Point(10, 22);
         lvLog.Size = new Size(440, 118);
+        lvLog.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         lvLog.Columns.AddRange(new ColumnHeader[] { colTime, colMode, colAction, colKey });
         lvLog.ContextMenuStrip = logContextMenu;
 
@@ -182,6 +189,7 @@ partial class MainForm
         colMappingKey = new DataGridViewTextBoxColumn();
         btnResetDefaults = new Button();
         btnSaveMappings = new Button();
+        btnReloadKeyboard = new Button();
 
         grpMappings.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)dgvMappings).BeginInit();
@@ -189,6 +197,7 @@ partial class MainForm
         grpMappings.Text = "Key Mappings";
         grpMappings.Location = new Point(12, 293);
         grpMappings.Size = new Size(460, 200);
+        grpMappings.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
 
         colMappingAction.HeaderText = "Action";
         colMappingAction.Name = "colMappingAction";
@@ -205,7 +214,8 @@ partial class MainForm
         colMappingKey.Width = 130;
 
         dgvMappings.Location = new Point(10, 22);
-        dgvMappings.Size = new Size(440, 135);
+        dgvMappings.Size = new Size(440, 120);
+        dgvMappings.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         dgvMappings.AllowUserToAddRows = false;
         dgvMappings.AllowUserToDeleteRows = false;
         dgvMappings.AllowUserToResizeRows = false;
@@ -220,15 +230,23 @@ partial class MainForm
         });
 
         btnResetDefaults.Text = "Reset Defaults";
-        btnResetDefaults.Location = new Point(240, 164);
-        btnResetDefaults.Size = new Size(100, 28);
+        btnResetDefaults.Location = new Point(10, 164);
+        btnResetDefaults.Size = new Size(115, 28);
+        btnResetDefaults.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+
+        btnReloadKeyboard.Text = "Reload Keyboard";
+        btnReloadKeyboard.Location = new Point(131, 164);
+        btnReloadKeyboard.Size = new Size(115, 28);
+        btnReloadKeyboard.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
 
         btnSaveMappings.Text = "Save Mappings";
-        btnSaveMappings.Location = new Point(350, 164);
-        btnSaveMappings.Size = new Size(100, 28);
+        btnSaveMappings.Location = new Point(335, 164);
+        btnSaveMappings.Size = new Size(115, 28);
+        btnSaveMappings.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
 
         grpMappings.Controls.Add(dgvMappings);
         grpMappings.Controls.Add(btnResetDefaults);
+        grpMappings.Controls.Add(btnReloadKeyboard);
         grpMappings.Controls.Add(btnSaveMappings);
 
         ((System.ComponentModel.ISupportInitialize)dgvMappings).EndInit();
@@ -257,6 +275,7 @@ partial class MainForm
         messageCountLabel.TextAlign = ContentAlignment.MiddleRight;
 
         statusStrip.Items.AddRange(new ToolStripItem[] { statusLabel, lastReceivedLabel, remoteStatusLabel, messageCountLabel });
+        statusStrip.Dock = DockStyle.Bottom;
 
         statusStrip.ResumeLayout(false);
         statusStrip.PerformLayout();
@@ -267,8 +286,8 @@ partial class MainForm
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(484, 526);
-        FormBorderStyle = FormBorderStyle.FixedSingle;
-        MaximizeBox = false;
+        FormBorderStyle = FormBorderStyle.Sizable;
+        MaximizeBox = true;
         MinimizeBox = true;
         Text = "Remote Control Receiver";
         ShowInTaskbar = false;

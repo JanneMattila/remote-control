@@ -65,7 +65,44 @@ body {
     color: var(--text-primary);
     min-width: 80px;
     text-align: center;
+    cursor: default;
+    user-select: none;
 }
+
+/* Fullscreen timer overlay */
+.timer-fullscreen {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--bg-primary);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.timer-fullscreen.open {
+    display: flex;
+}
+
+.timer-fullscreen-display {
+    font-size: clamp(4rem, 22vw, 14rem);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.05em;
+    color: var(--text-primary);
+    user-select: none;
+}
+
+.timer-fullscreen-display.countdown {
+    color: var(--warning);
+}
+
+.timer-fullscreen-display.alert {
+    color: var(--error);
+    animation: blink 0.6s infinite alternate;
+}
+
 
 .timer-display.countdown {
     color: var(--warning);
@@ -342,6 +379,86 @@ body {
 
 .commands-bottom[data-mode="custom"] {
     grid-template-columns: 1fr 1fr;
+}
+
+/* Keyboard mode: sequences grid, nav buttons full-width at bottom */
+.commands-bottom[data-mode="keyboard"] {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.commands-bottom[data-mode="keyboard"] .keyboard-seq {
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+    background: #111;
+    border: 1px solid #2a2a2a;
+    min-height: 56px;
+}
+
+.commands-bottom[data-mode="keyboard"] .keyboard-seq .keyboard-seq-text {
+    flex: 1;
+    text-align: left;
+}
+
+.commands-bottom[data-mode="keyboard"] .keyboard-seq .keyboard-active-pill {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--accent);
+    background: color-mix(in srgb, var(--accent) 24%, #0b0b0b);
+    color: var(--text-primary);
+}
+
+.commands-bottom[data-mode="keyboard"] .keyboard-nav-prev,
+.commands-bottom[data-mode="keyboard"] .keyboard-nav-next {
+    width: 100%;
+    grid-column: 1 / -1;
+}
+
+.commands-bottom[data-mode="keyboard"] .keyboard-nav-prev {
+    min-height: 56px;
+    margin-top: auto;
+}
+
+.commands-bottom[data-mode="keyboard"] .keyboard-nav-next {
+    min-height: 84px;
+}
+
+.cmd-btn.keyboard-current {
+    border: 2px solid var(--accent);
+    background: color-mix(in srgb, var(--accent) 28%, #080808);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 70%, #ffffff 30%);
+}
+
+/* ---- Toast notification ---- */
+.toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(16px);
+    background: var(--bg-card);
+    border: 1px solid var(--accent);
+    color: var(--text-primary);
+    padding: 10px 20px;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    font-weight: 500;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+.toast.toast-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
 
 /* ---- Custom Mode: Add Button ---- */

@@ -5,6 +5,7 @@ export const StorageKeys = {
     SELECTED_MODE: 'rc_selected_mode',
     CUSTOM_COMMANDS: 'rc_custom_commands',
     TIMER_PREFS: 'rc_timer_prefs',
+    KEYBOARD_SEQUENCES: 'rc_keyboard_sequences',
 };
 
 export function saveConnectionString(connStr) {

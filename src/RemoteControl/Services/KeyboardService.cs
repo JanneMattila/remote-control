@@ -176,4 +176,83 @@ public static class KeyboardService
             "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
         ];
     }
+
+    /// <summary>
+    /// Sends a text string with support for special keys like {Enter}, {Tab}, {Backspace}, etc.
+    /// Example: "Hello{Enter}World{Tab}" sends "Hello", then Enter, then "World", then Tab.
+    /// </summary>
+    public static void SendText(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return;
+
+        var inputs = new List<INPUT>();
+        int i = 0;
+
+        while (i < text.Length)
+        {
+            // Check if we have a special key sequence like {Enter}
+            if (text[i] == '{' && text.IndexOf('}', i) > i)
+            {
+                int closeIndex = text.IndexOf('}', i);
+                string keyName = text.Substring(i + 1, closeIndex - i - 1);
+                byte vk = GetVirtualKeyCode(keyName);
+
+                if (vk != 0)
+                {
+                    // It's a valid key, add key down and key up
+                    inputs.Add(KeyDown(vk));
+                    inputs.Add(KeyUp(vk));
+                    i = closeIndex + 1;
+                    continue;
+                }
+            }
+
+            // Regular character - send it using KEYEVENTF_UNICODE
+            char ch = text[i];
+            ushort scanCode = (ushort)ch;
+
+            var input = new INPUT
+            {
+                type = INPUT_KEYBOARD,
+                u = new InputUnion
+                {
+                    ki = new KEYBDINPUT
+                    {
+                        wVk = 0,
+                        wScan = scanCode,
+                        dwFlags = 4, // KEYEVENTF_UNICODE
+                        time = 0,
+                        dwExtraInfo = 0
+                    }
+                }
+            };
+            inputs.Add(input);
+
+            var inputUp = new INPUT
+            {
+                type = INPUT_KEYBOARD,
+                u = new InputUnion
+                {
+                    ki = new KEYBDINPUT
+                    {
+                        wVk = 0,
+                        wScan = scanCode,
+                        dwFlags = 5, // KEYEVENTF_UNICODE | KEYEVENTF_KEYUP
+                        time = 0,
+                        dwExtraInfo = 0
+                    }
+                }
+            };
+            inputs.Add(inputUp);
+
+            i++;
+        }
+
+        if (inputs.Count > 0)
+        {
+            Send(inputs.ToArray());
+        }
+    }
 }
+

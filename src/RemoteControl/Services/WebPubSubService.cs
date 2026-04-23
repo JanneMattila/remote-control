@@ -140,6 +140,25 @@ public class WebPubSubService : IDisposable
     }
 
     /// <summary>
+    /// Sends a message to the "remote" group via Web PubSub.
+    /// </summary>
+    public async Task SendMessageAsync(object message)
+    {
+        if (_client is null || !IsConnected)
+            return;
+
+        try
+        {
+            var json = JsonSerializer.Serialize(message);
+            await _client.SendToGroupAsync("remote", BinaryData.FromString(json), WebPubSubDataType.Json);
+        }
+        catch
+        {
+            // Silently fail - if connection is lost, that's handled elsewhere
+        }
+    }
+
+    /// <summary>
     /// Disposes of the service and releases all resources.
     /// </summary>
     public void Dispose()
