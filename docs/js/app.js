@@ -251,6 +251,15 @@ function renderCommands() {
             const navClass = direction === 'next' ? 'keyboard-nav-next' : 'keyboard-nav-prev';
             btn.className = `cmd-btn ${cmd.class || 'btn-secondary'} ${navClass}`;
             btn.innerHTML = `<span class="icon">${cmd.icon || ''}</span> ${cmd.label}`;
+
+            const sendCurrentSequence = () => {
+                const seq = keyboardSequences[currentKeyboardIndex] || {};
+                const seqId = seq.id || seq.Id || '';
+                if (seqId) {
+                    connection.sendCommand(currentMode, seqId);
+                }
+            };
+
             btn.addEventListener('click', () => {
                 if (keyboardSequences.length === 0) return;
                 if (navigator.vibrate) navigator.vibrate(50);
@@ -260,15 +269,7 @@ function renderCommands() {
                     currentKeyboardIndex = (currentKeyboardIndex - 1 + keyboardSequences.length) % keyboardSequences.length;
                 }
                 renderCommands();
-            });
-            btn.addEventListener('dblclick', () => {
-                if (keyboardSequences.length === 0) return;
-                if (navigator.vibrate) navigator.vibrate(50);
-                const seq = keyboardSequences[currentKeyboardIndex] || {};
-                const seqId = seq.id || seq.Id || '';
-                if (seqId) {
-                    connection.sendCommand(currentMode, seqId);
-                }
+                sendCurrentSequence();
             });
             return btn;
         };

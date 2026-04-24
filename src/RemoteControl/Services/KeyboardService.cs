@@ -10,6 +10,7 @@ public static class KeyboardService
 {
     private const uint INPUT_KEYBOARD = 1;
     private const uint KEYEVENTF_KEYUP = 0x0002;
+    private const uint KEYEVENTF_UNICODE = 0x0004;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct KEYBDINPUT
@@ -50,9 +51,26 @@ public static class KeyboardService
     [DllImport("user32.dll", SetLastError = true)]
     private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
 
-    private static void Send(params INPUT[] inputs)
+    private static bool Send(params INPUT[] inputs)
     {
-        SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+        if (inputs.Length == 0)
+            return true;
+
+        int inputSize = Marshal.SizeOf<INPUT>();
+        uint sent = SendInput((uint)inputs.Length, inputs, inputSize);
+
+        if (sent == inputs.Length)
+            return true;
+
+        if (sent > 0 && sent < inputs.Length)
+        {
+            int remainingCount = inputs.Length - (int)sent;
+            var remaining = new INPUT[remainingCount];
+            Array.Copy(inputs, (int)sent, remaining, 0, remainingCount);
+            sent += SendInput((uint)remainingCount, remaining, inputSize);
+        }
+
+        return sent == inputs.Length;
     }
 
     private static INPUT KeyDown(byte vk) => new()
@@ -186,7 +204,6 @@ public static class KeyboardService
         if (string.IsNullOrEmpty(text))
             return;
 
-        var inputs = new List<INPUT>();
         int i = 0;
 
         while (i < text.Length)
@@ -200,9 +217,8 @@ public static class KeyboardService
 
                 if (vk != 0)
                 {
-                    // It's a valid key, add key down and key up
-                    inputs.Add(KeyDown(vk));
-                    inputs.Add(KeyUp(vk));
+                    // Send special keys as a virtual-key down/up pair.
+                    Send(KeyDown(vk), KeyUp(vk));
                     i = closeIndex + 1;
                     continue;
                 }
@@ -221,13 +237,12 @@ public static class KeyboardService
                     {
                         wVk = 0,
                         wScan = scanCode,
-                        dwFlags = 4, // KEYEVENTF_UNICODE
+                        dwFlags = KEYEVENTF_UNICODE,
                         time = 0,
                         dwExtraInfo = 0
                     }
                 }
             };
-            inputs.Add(input);
 
             var inputUp = new INPUT
             {
@@ -238,20 +253,18 @@ public static class KeyboardService
                     {
                         wVk = 0,
                         wScan = scanCode,
-                        dwFlags = 5, // KEYEVENTF_UNICODE | KEYEVENTF_KEYUP
+                        dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
                         time = 0,
                         dwExtraInfo = 0
                     }
                 }
             };
-            inputs.Add(inputUp);
+
+            // Send each character as its own down/up pair to minimize the risk of
+            // partial injection leaving a key logically pressed.
+            Send(input, inputUp);
 
             i++;
-        }
-
-        if (inputs.Count > 0)
-        {
-            Send(inputs.ToArray());
         }
     }
 }
