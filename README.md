@@ -21,7 +21,7 @@ A two-app system for remotely controlling presentations, media players, and cust
 
 ### SPA Remote Control (mobile)
 
-- **Three modes**: PowerPoint, Watch (YouTube/media), and Custom (user-defined buttons)
+- **Four modes**: PowerPoint, Watch (YouTube/media), Keyboard (server-defined text sequences), and Custom (user-defined buttons)
 - **Presentation timer**: Stopwatch and countdown with vibration alerts
 - **PWA**: Installable, works offline (UI only), keeps screen awake
 - **Settings**: Export/import configuration as JSON, configurable connection
@@ -105,6 +105,24 @@ The app starts minimized to the system tray. Double-click the tray icon to open 
 
 Define your own buttons with custom labels, icons, and action names. The receiver maps action names to keys via the configurable key mappings.
 
+### Keyboard Mode
+
+Keyboard mode loads text sequences from the receiver and shows them as a selectable list.
+
+| Interaction | Result |
+|-------------|--------|
+| Single click sequence row | Sets the active sequence |
+| Double click sequence row | Sends that sequence and keeps it active |
+| Previous button | Moves active selection to previous sequence |
+| Next button | Moves active selection to next sequence |
+| Double click Previous or Next | Sends the currently active sequence |
+
+Notes:
+
+- The active row is highlighted and marked with `ACTIVE`.
+- Sequence rows are full width, left aligned, and visually separated from standard command buttons.
+- The receiver can push updated sequences to clients on connect and when keyboard sequences are reloaded.
+
 ## Configuration
 
 ### SPA Config (Export/Import)
@@ -126,6 +144,25 @@ The receiver stores key mappings in `usersettings.json` next to the executable. 
   "HubName": "Hub"
 }
 ```
+
+### Keyboard Sequences File
+
+The receiver stores keyboard sequences in `keyboardsequences.json` next to the executable.
+
+```json
+{
+  "sequences": [
+    {
+      "id": "aks_workloads",
+      "label": "List workloads running in my AKS",
+      "text": "List workloads running in my AKS{Enter}",
+      "icon": "📋"
+    }
+  ]
+}
+```
+
+Use the receiver **Reload Keyboard** button to reload this file and push updates to connected clients.
 
 ## Protocol
 
