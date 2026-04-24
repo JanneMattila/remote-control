@@ -19,6 +19,15 @@ public partial class MainForm : Form
     private DateTime? _lastRemoteHeartbeat;
     private System.Windows.Forms.Timer _presenceTimer = null!;
 
+    // Reconnect state
+    private bool _intentionalDisconnect;
+    private bool _isConnecting;
+    private int _reconnectAttempt;
+    private System.Windows.Forms.Timer? _reconnectTimer;
+
+    // Stepped back-off delays (seconds): 30s, 60s, 120s, then 300s cap
+    private static readonly int[] ReconnectDelaysSeconds = [30, 60, 120, 300];
+
     public MainForm()
     {
         InitializeComponent();
@@ -184,6 +193,8 @@ public partial class MainForm : Form
     private async Task ExitApplicationAsync()
     {
         _isExiting = true;
+        _intentionalDisconnect = true;
+        StopReconnectTimer();
         notifyIcon.Visible = false;
         await _pubSubService.DisconnectAsync();
         Application.Exit();
@@ -214,6 +225,10 @@ public partial class MainForm : Form
         }
         if (string.IsNullOrEmpty(hub)) hub = "Hub";
 
+        _intentionalDisconnect = false;
+        _isConnecting = true;
+        StopReconnectTimer();
+
         try
         {
             btnConnect.Enabled = false;
@@ -221,24 +236,37 @@ public partial class MainForm : Form
             _config.HubName = hub;
             SaveConfiguration();
             await _pubSubService.ConnectAsync(connStr, hub);
-                    SendKeyboardSequences();
+            SendKeyboardSequences();
+            _reconnectAttempt = 0;
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
-                $"Failed to connect:\n{ex.Message}",
-                "Connection Error",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
+            if (!_intentionalDisconnect)
+            {
+                // Show the error on the first manual connect attempt,
+                // but schedule a retry for subsequent automatic attempts.
+                if (_reconnectAttempt == 0)
+                {
+                    MessageBox.Show(
+                        $"Failed to connect:\n{ex.Message}",
+                        "Connection Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+                ScheduleReconnect();
+            }
         }
         finally
         {
+            _isConnecting = false;
             btnConnect.Enabled = true;
         }
     }
 
     private async Task DisconnectAsync()
     {
+        _intentionalDisconnect = true;
+        StopReconnectTimer();
         try
         {
             btnConnect.Enabled = false;
@@ -255,6 +283,38 @@ public partial class MainForm : Form
         finally
         {
             btnConnect.Enabled = true;
+        }
+    }
+
+    private void ScheduleReconnect()
+    {
+        StopReconnectTimer();
+
+        int delaySecs = ReconnectDelaysSeconds[
+            Math.Min(_reconnectAttempt, ReconnectDelaysSeconds.Length - 1)];
+        _reconnectAttempt++;
+
+        lblStatus.Text = $"Reconnecting in {delaySecs}s (attempt {_reconnectAttempt})";
+        lblStatus.ForeColor = Color.Orange;
+        statusLabel.Text = lblStatus.Text;
+
+        _reconnectTimer = new System.Windows.Forms.Timer { Interval = delaySecs * 1000 };
+        _reconnectTimer.Tick += async (_, _) =>
+        {
+            StopReconnectTimer();
+            if (!_intentionalDisconnect && !_pubSubService.IsConnected)
+                await ConnectAsync();
+        };
+        _reconnectTimer.Start();
+    }
+
+    private void StopReconnectTimer()
+    {
+        if (_reconnectTimer is not null)
+        {
+            _reconnectTimer.Stop();
+            _reconnectTimer.Dispose();
+            _reconnectTimer = null;
         }
     }
 
@@ -278,6 +338,8 @@ public partial class MainForm : Form
                 btnConnect.Text = "Disconnect";
                 trayMenuConnect.Text = "Disconnect";
                 notifyIcon.Text = "Remote Control Receiver - Connected";
+                _reconnectAttempt = 0;
+                StopReconnectTimer();
                 break;
             case "Connecting":
                 lblStatus.ForeColor = Color.Orange;
@@ -290,6 +352,10 @@ public partial class MainForm : Form
                 trayMenuConnect.Text = "Connect";
                 notifyIcon.Text = "Remote Control Receiver - Disconnected";
                 _lastRemoteHeartbeat = null;
+                // Schedule reconnect if this was not user-initiated and we're not
+                // mid-connect (the ConnectAsync path handles its own scheduling).
+                if (!_intentionalDisconnect && !_isConnecting)
+                    ScheduleReconnect();
                 break;
         }
     }
@@ -365,7 +431,7 @@ public partial class MainForm : Form
                 SendKeyboardSequences();
                 return;
             }
-            else if (message.Action.StartsWith("seq_", StringComparison.OrdinalIgnoreCase))
+            else if (_keyboardConfig.GetSequenceById(message.Action) is not null)
             {
                 HandleKeyboardSequence(message.Action);
                 return;
@@ -445,6 +511,18 @@ public partial class MainForm : Form
         {
             KeyboardService.SendText(sequence.Text);
         }
+
+        var status = formIsVisible ? $"{sequence.Label} — DEBUG (not sent)" : sequence.Label;
+        var item = new ListViewItem(new[] { DateTime.Now.ToString("HH:mm:ss"), "keyboard", sequenceId, status });
+        if (formIsVisible)
+        {
+            item.BackColor = Color.DarkSlateBlue;
+            item.ForeColor = Color.White;
+        }
+        lvLog.Items.Insert(0, item);
+        lvLog.EnsureVisible(0);
+        while (lvLog.Items.Count > 100)
+            lvLog.Items.RemoveAt(lvLog.Items.Count - 1);
 
         _messageCount++;
         messageCountLabel.Text = $"Messages: {_messageCount}";
