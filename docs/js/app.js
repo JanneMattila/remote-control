@@ -172,8 +172,16 @@ function renderModeTabs() {
     const tabsContainer = dom.modeTabs;
     tabsContainer.innerHTML = '';
 
-    const allModes = { ...MODES, custom: { name: 'Custom', icon: '🛠' } };
-    for (const [key, mode] of Object.entries(allModes)) {
+    const customMode = { custom: { name: 'Custom', icon: '🛠' } };
+    const preferredOrder = ['powerpoint', 'keyboard', 'watch'];
+    const orderedModeKeys = [
+        ...preferredOrder.filter((modeKey) => MODES[modeKey]),
+        ...Object.keys(MODES).filter((modeKey) => !preferredOrder.includes(modeKey)),
+        'custom',
+    ];
+
+    for (const key of orderedModeKeys) {
+        const mode = customMode[key] || MODES[key];
         const btn = document.createElement('button');
         btn.className = 'mode-tab' + (key === currentMode ? ' active' : '');
         btn.textContent = `${mode.icon} ${mode.name}`;
@@ -181,6 +189,29 @@ function renderModeTabs() {
         btn.addEventListener('click', () => switchMode(key));
         tabsContainer.appendChild(btn);
     }
+
+    requestAnimationFrame(updateModeTabScrollIndicators);
+}
+
+function updateModeTabScrollIndicators() {
+    const tabs = dom.modeTabs;
+    if (!tabs) return;
+
+    const maxScrollLeft = tabs.scrollWidth - tabs.clientWidth;
+    const hasOverflow = maxScrollLeft > 1;
+
+    tabs.classList.toggle('mode-tabs-scrollable', hasOverflow);
+
+    if (!hasOverflow) {
+        tabs.classList.remove('show-left-indicator', 'show-right-indicator');
+        return;
+    }
+
+    const showLeft = tabs.scrollLeft > 2;
+    const showRight = tabs.scrollLeft < (maxScrollLeft - 2);
+
+    tabs.classList.toggle('show-left-indicator', showLeft);
+    tabs.classList.toggle('show-right-indicator', showRight);
 }
 
 function switchMode(mode) {
@@ -490,6 +521,9 @@ function connectWithSettings(connStr, hub) {
    Event Listeners
    ================================================ */
 function bindEvents() {
+    dom.modeTabs.addEventListener('scroll', updateModeTabScrollIndicators, { passive: true });
+    window.addEventListener('resize', updateModeTabScrollIndicators);
+
     // Setup screen
     dom.setupConnect.addEventListener('click', () => {
         connectWithSettings(dom.setupConnStr.value, dom.setupHub.value);

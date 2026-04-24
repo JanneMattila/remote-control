@@ -204,6 +204,28 @@ public static class KeyboardService
         if (string.IsNullOrEmpty(text))
             return;
 
+        // For long text payloads, SendKeys is significantly more reliable than building
+        // a large KEYEVENTF_UNICODE stream manually with SendInput.
+        try
+        {
+            SendKeys.SendWait(text);
+        }
+        catch
+        {
+            // Best-effort fallback for environments where SendKeys cannot execute.
+            SendTextWithSendInput(text);
+        }
+    }
+
+    /// <summary>
+    /// Sends a text string using SendInput and supports special keys like {Enter}.
+    /// Kept as a fallback implementation in case SendKeys.SendWait is unavailable.
+    /// </summary>
+    public static void SendTextWithSendInput(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return;
+
         int i = 0;
 
         while (i < text.Length)

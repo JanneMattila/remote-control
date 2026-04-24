@@ -224,6 +224,7 @@ body {
     gap: 4px;
     padding: 8px 12px;
     overflow-x: auto;
+    position: relative;
     scrollbar-width: none;
 }
 
@@ -828,8 +829,54 @@ body {
     margin: 16px 0;
 }
 
+/* ---- Responsive: mobile/tab widths ---- */
+@media (max-width: 768px) {
+    .mode-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .mode-tabs::before,
+    .mode-tabs::after {
+        content: '';
+        position: absolute;
+        top: 8px;
+        bottom: 8px;
+        width: 20px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+        z-index: 2;
+    }
+
+    .mode-tabs::before {
+        left: 12px;
+        background: linear-gradient(to right, var(--bg-primary), rgba(26, 26, 46, 0));
+    }
+
+    .mode-tabs::after {
+        right: 12px;
+        background: linear-gradient(to left, var(--bg-primary), rgba(26, 26, 46, 0));
+    }
+
+    .mode-tabs.mode-tabs-scrollable.show-left-indicator::before {
+        opacity: 1;
+    }
+
+    .mode-tabs.mode-tabs-scrollable.show-right-indicator::after {
+        opacity: 1;
+    }
+
+    .mode-tab {
+        flex: 0 0 auto;
+        min-width: max-content;
+    }
+}
+
 /* ---- Responsive: narrow mobile screens ---- */
 @media (max-width: 400px) {
+
     .commands-top .cmd-btn {
         padding: 10px 8px;
         font-size: 0.85rem;
