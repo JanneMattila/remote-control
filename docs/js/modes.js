@@ -24,10 +24,10 @@ export const MODES = {
             { action: 'skipForward', label: 'Skip Forward', icon: '⏩', class: 'btn-secondary btn-large' },
         ],
         critical: [
-            { action: 'volumeUp', label: 'Vol +', icon: '🔊', class: 'btn-secondary' },
-            { action: 'volumeDown', label: 'Vol −', icon: '🔉', class: 'btn-secondary' },
-            { action: 'mute', label: 'Mute', icon: '🔇', class: 'btn-secondary' },
-            { action: 'fullscreen', label: 'Fullscreen', icon: '⛶', class: 'btn-accent' },
+            { action: 'volumeUp', label: 'Vol +', icon: '🔊', class: 'btn-secondary', noConfirm: true },
+            { action: 'volumeDown', label: 'Vol −', icon: '🔉', class: 'btn-secondary', noConfirm: true },
+            { action: 'mute', label: 'Mute', icon: '🔇', class: 'btn-secondary', noConfirm: true },
+            { action: 'fullscreen', label: 'Fullscreen', icon: '⛶', class: 'btn-accent btn-wide', noConfirm: true },
         ]
     },
     keyboard: {

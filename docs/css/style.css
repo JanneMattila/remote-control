@@ -370,12 +370,36 @@ body {
     margin-top: 16px;
 }
 
+/* Watch top: 5-col grid so the fullscreen button can be twice as wide */
+.commands-top[data-mode="watch"] {
+    grid-template-columns: repeat(5, 1fr);
+}
+
+.commands-top[data-mode="watch"] .btn-wide {
+    grid-column: span 2;
+}
+
 .commands-bottom[data-mode="watch"] {
+    flex: 1;
+    min-height: 0;
+    display: grid;
     grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr auto;
 }
 
 .commands-bottom[data-mode="watch"] .cmd-btn:first-child {
     grid-column: 1 / -1;
+    grid-row: 1;
+}
+
+.commands-bottom[data-mode="watch"] .cmd-btn:nth-child(2) {
+    grid-row: 3;
+    grid-column: 1;
+}
+
+.commands-bottom[data-mode="watch"] .cmd-btn:nth-child(3) {
+    grid-row: 3;
+    grid-column: 2;
 }
 
 .commands-bottom[data-mode="custom"] {
