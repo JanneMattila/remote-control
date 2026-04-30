@@ -370,13 +370,21 @@ body {
     margin-top: 16px;
 }
 
-/* Watch top: 5-col grid so the fullscreen button can be twice as wide */
+/* Watch top: flex wrap so buttons keep a min size and overflow to next line */
 .commands-top[data-mode="watch"] {
-    grid-template-columns: repeat(5, 1fr);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.commands-top[data-mode="watch"] .cmd-btn {
+    flex: 1 1 90px;
+    min-width: 90px;
 }
 
 .commands-top[data-mode="watch"] .btn-wide {
-    grid-column: span 2;
+    flex: 2 1 200px;
+    min-width: 180px;
 }
 
 .commands-bottom[data-mode="watch"] {
